@@ -1,31 +1,160 @@
-## builder-relayer-client
+# builder-relayer-client
 
-### Install
+A TypeScript client library for interacting with Polymarket relayers, providing seamless integration for executing Safe transactions and deploying Safe contracts through Polymarket's relayer infrastructure.
+
+
+## Installation
 
 ```bash
 pnpm install @polymarket/builder-relayer-client
 ```
 
-### Usage
+## Quick Start
 
-```ts
+### Basic Setup
+
+```typescript
 import { ethers } from "ethers";
 import { createWalletClient, Hex, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { polygon } from "viem/chains";
 import { RelayClient } from "@polymarket/builder-relayer-client";
 
-const relayerUrl = `${process.env.POLYMARKET_RELAYER_URL}`;
-const chainId = parseInt(`${process.env.CHAIN_ID}`);
+const relayerUrl = process.env.POLYMARKET_RELAYER_URL;
+const chainId = parseInt(process.env.CHAIN_ID);
 
-// Ethers
-const provider = new ethers.providers.JsonRpcProvider(`${process.env.RPC_URL}`);
-const pk = new ethers.Wallet(`${process.env.PK}`);
-const wallet = pk.connect(provider);
+// Using Ethers v5
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
-// Viem
-const pk = privateKeyToAccount(`${process.env.PK}` as Hex);
-const wallet = createWalletClient({account: pk, chain: polygon, transport: http(`${process.env.RPC_URL}`)});
+// Using Viem
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const wallet = createWalletClient({
+  account,
+  chain: polygon,
+  transport: http(process.env.RPC_URL)
+});
 
-// Initialize Relay Client
+// Initialize the client
 const client = new RelayClient(relayerUrl, chainId, wallet);
 ```
+
+### With Local Builder Authentication
+
+```typescript
+import { BuilderApiKeyCreds, BuilderConfig } from "@polymarket/builder-signing-sdk";
+
+const builderCreds: BuilderApiKeyCreds = {
+  key: process.env.BUILDER_API_KEY,
+  secret: process.env.BUILDER_SECRET,
+  passphrase: process.env.BUILDER_PASS_PHRASE,
+};
+
+const builderConfig = new BuilderConfig({
+  localBuilderCreds: builderCreds
+});
+
+const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+```
+
+### With Remote Builder Authentication
+
+```typescript
+import { BuilderConfig } from "@polymarket/builder-signing-sdk";
+
+const builderConfig = new BuilderConfig({
+  remoteBuilderSignerUrl: "http://localhost:3000/sign",
+});
+
+const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+```
+
+## Examples
+
+### Execute ERC20 Approval Transaction
+
+```typescript
+import { ethers } from "ethers";
+import { Interface } from "ethers/lib/utils";
+import { OperationType, SafeTransaction } from "@polymarket/builder-relayer-client";
+
+const erc20Interface = new Interface([
+  {
+    "constant": false,
+    "inputs": [
+      {"name": "_spender", "type": "address"},
+      {"name": "_value", "type": "uint256"}
+    ],
+    "name": "approve",
+    "outputs": [{"name": "", "type": "bool"}],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]);
+
+function createApprovalTransaction(
+  tokenAddress: string,
+  spenderAddress: string
+): SafeTransaction {
+  return {
+    to: tokenAddress,
+    operation: OperationType.Call,
+    data: erc20Interface.encodeFunctionData("approve", [
+      spenderAddress,
+      ethers.constants.MaxUint256
+    ]),
+    value: "0"
+  };
+}
+
+// Execute the approval
+const approvalTx = createApprovalTransaction(
+  "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC
+  "0x4d97dcd97ec945f40cf65f87097ace5ea0476045"  // Spender
+);
+
+const response = await client.executeSafeTransactions([approvalTx], "USDC Approval");
+const result = await response.wait();
+console.log("Approval completed:", result.transactionHash);
+```
+
+### Deploy Safe Contract
+
+```typescript
+const response = await client.deploySafe();
+const result = await response.wait();
+
+if (result) {
+  console.log("Safe deployed successfully!");
+  console.log("Transaction Hash:", result.transactionHash);
+  console.log("Safe Address:", result.proxyAddress);
+} else {
+  console.log("Safe deployment failed");
+}
+```
+
+### Monitor Transaction Status
+
+```typescript
+const response = await client.executeSafeTransactions(transactions);
+
+// Wait for confirmation
+const confirmedTx = await response.wait();
+
+if (confirmedTx) {
+  console.log("Transaction confirmed:", confirmedTx.transactionHash);
+} else {
+  console.log("Transaction failed or timed out");
+}
+
+// Or poll manually
+const result = await client.pollUntilState(
+  response.transactionID,
+  [RelayerTransactionState.STATE_CONFIRMED],
+  RelayerTransactionState.STATE_FAILED,
+  30, // max polls
+  2000 // poll every 2 seconds
+);
+```
+
