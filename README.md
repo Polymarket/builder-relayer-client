@@ -1,7 +1,6 @@
 # builder-relayer-client
 
-A TypeScript client library for interacting with Polymarket relayers, providing seamless integration for executing Safe transactions and deploying Safe contracts through Polymarket's relayer infrastructure.
-
+TypeScript client library for interacting with Polymarket relayer infrastructure
 
 ## Installation
 
@@ -111,10 +110,10 @@ function createApprovalTransaction(
 // Execute the approval
 const approvalTx = createApprovalTransaction(
   "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC
-  "0x4d97dcd97ec945f40cf65f87097ace5ea0476045"  // Spender
+  "0x4d97dcd97ec945f40cf65f87097ace5ea0476045"  // CTF
 );
 
-const response = await client.executeSafeTransactions([approvalTx], "USDC Approval");
+const response = await client.executeSafeTransactions([approvalTx], "usdc approval on the CTF");
 const result = await response.wait();
 console.log("Approval completed:", result.transactionHash);
 ```
