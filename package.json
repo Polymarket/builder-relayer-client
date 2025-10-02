@@ -1,7 +1,7 @@
 {
-    "name": "@polymarket/relayer-client",
+    "name": "@polymarket/builder-relayer-client",
     "description": "Client for Polymarket relayers",
-    "version": "2.0.2",
+    "version": "0.0.1",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
