@@ -2,8 +2,7 @@ import { config as dotenvConfig } from "dotenv";
 import { ethers } from "ethers";
 import { Interface } from "ethers/lib/utils";
 import { resolve } from "path";
-import { RelayClient } from "../src/client";
-import { OperationType, SafeTransaction } from "../src/types";
+import { RelayClient, OperationType, SafeTransaction } from "../src";
 import { createWalletClient, Hex, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { polygonAmoy } from "viem/chains";
@@ -11,7 +10,18 @@ import { BuilderApiKeyCreds, BuilderConfig } from "@polymarket/builder-signing-s
 
 dotenvConfig({ path: resolve(__dirname, "../.env") });
 
-const erc20Interface = new Interface([{"constant": false,"inputs": [{"name": "_spender","type": "address"},{"name": "_value","type": "uint256"}],"name": "approve","outputs": [{"name": "","type": "bool"}],"payable": false,"stateMutability": "nonpayable","type": "function"}]);
+const erc20Interface = new Interface([
+        {
+            "constant": false,"inputs": 
+            [{"name": "_spender","type": "address"},{"name": "_value","type": "uint256"}],
+            "name": "approve",
+            "outputs": [{"name": "","type": "bool"}],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ]
+);
 
 function createUsdcApproveTxn(
     token: string,
@@ -26,23 +36,13 @@ function createUsdcApproveTxn(
 }
 
 async function main() {
-
     console.log(`Starting...`);
     
-    const relayerUrl = `${process.env.RELAYER_URL}`;
-    const chainId = parseInt(`${process.env.CHAIN_ID}`);
+    const relayerUrl = `${process.env.RELAYER_URL_STAGING}`;
+    const chainId = parseInt(`${process.env.CHAIN_ID_STAGING}`);
 
-
-    //  ethers
-    // console.log(`ethers`)
-    // const provider = new ethers.providers.JsonRpcProvider(`${process.env.RPC_URL}`);
-    // const pk = new ethers.Wallet(`${process.env.SAFE_PK}`);
-    // const wallet = pk.connect(provider);
-
-    // viem
-    console.log(`Viem`);
-    const pk = privateKeyToAccount(`${process.env.SAFE_PK}` as Hex);
-    const wallet = createWalletClient({account: pk, chain: polygonAmoy, transport: http(`${process.env.RPC_URL}`)});
+    const pk = privateKeyToAccount(`${process.env.PK}` as Hex);
+    const wallet = createWalletClient({account: pk, chain: polygonAmoy, transport: http(`${process.env.RPC_URL_STAGING}`)});
 
     const builderCreds: BuilderApiKeyCreds = {
         key: `${process.env.BUILDER_API_KEY}`,
@@ -58,7 +58,7 @@ async function main() {
     const ctf = "0x4d97dcd97ec945f40cf65f87097ace5ea0476045";
     const txn = createUsdcApproveTxn(usdc, ctf);
 
-    const resp = await client.executeSafeTransactions([txn, txn], "approve USDC on CTF");
+    const resp = await client.execute([txn, txn], "approve USDC on CTF");
     const t = await resp.wait();
     console.log(t);
 
