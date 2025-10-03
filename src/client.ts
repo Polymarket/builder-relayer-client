@@ -155,6 +155,7 @@ export class RelayClient {
         if (deployed) {
             throw SAFE_DEPLOYED;
         }
+        console.log(`Deploying safe ${safe}...`);
         return this._deploy();
     }
 
