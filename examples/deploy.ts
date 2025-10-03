@@ -1,5 +1,4 @@
 import { config as dotenvConfig } from "dotenv";
-import { ethers } from "ethers";
 import { resolve } from "path";
 import { RelayClient } from "../src/client";
 import { BuilderApiKeyCreds, BuilderConfig } from "@polymarket/builder-signing-sdk";
