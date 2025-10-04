@@ -99,3 +99,8 @@ export interface RelayerTransactionResponse {
     getTransaction: () => Promise<RelayerTransaction[]>
     wait: () => Promise<RelayerTransaction | undefined>
 }
+
+
+export interface GetDeployedResponse {
+    deployed: boolean;
+}

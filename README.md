@@ -132,28 +132,3 @@ if (result) {
   console.log("Safe deployment failed");
 }
 ```
-
-### Monitor Transaction Status
-
-```typescript
-const response = await client.executeSafeTransactions(transactions);
-
-// Wait for confirmation
-const confirmedTx = await response.wait();
-
-if (confirmedTx) {
-  console.log("Transaction confirmed:", confirmedTx.transactionHash);
-} else {
-  console.log("Transaction failed or timed out");
-}
-
-// Or poll manually
-const result = await client.pollUntilState(
-  response.transactionID,
-  [RelayerTransactionState.STATE_CONFIRMED],
-  RelayerTransactionState.STATE_FAILED,
-  30, // max polls
-  2000 // poll every 2 seconds
-);
-```
-

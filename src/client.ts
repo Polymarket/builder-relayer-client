@@ -9,6 +9,7 @@ import {
     RequestOptions,
 } from "./http-helpers";
 import { 
+    GetDeployedResponse,
     NoncePayload,
     RelayerTransaction,
     RelayerTransactionResponse,
@@ -18,6 +19,7 @@ import {
     TransactionType
 } from "./types";
 import { 
+    GET_DEPLOYED,
     GET_NONCE,
     GET_TRANSACTION,
     GET_TRANSACTIONS,
@@ -26,11 +28,13 @@ import {
 import { 
     buildSafeTransactionRequest,
     buildSafeCreateTransactionRequest,
+    deriveSafe,
 } from "./builder";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
 import { ContractConfig, getContractConfig } from "./config";
 import { BuilderConfig, BuilderHeaderPayload } from "@polymarket/builder-signing-sdk";
+import { SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
 
 
 export class RelayClient {
@@ -46,6 +50,8 @@ export class RelayClient {
 
     readonly builderConfig?: BuilderConfig;
 
+    __deployed: boolean;
+
     constructor(
         relayerUrl: string,
         chainId: number,
@@ -56,6 +62,7 @@ export class RelayClient {
         this.chainId = chainId;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
+        this.__deployed = false;
         
         if (signer != undefined) {
             this.signer = createAbstractSigner(chainId, signer);
@@ -86,12 +93,23 @@ export class RelayClient {
         return this.sendAuthedRequest(GET, GET_TRANSACTIONS);
     }
 
-    public async executeSafeTransactions(txns: SafeTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
-        if (this.signer == undefined) {
-            throw new Error("missing signer");
+    /**
+     * Executes a batch of safe transactions
+     * @param txns 
+     * @param metadata 
+     * @returns 
+     */
+    public async execute(txns: SafeTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
+        this.signerNeeded();
+        const safe = await this.getExpectedSafe();
+
+        const deployed = await this.getDeployed(safe);
+        if (!deployed) {
+            throw SAFE_NOT_DEPLOYED;
         }
+        
         const start = Date.now();
-        const from = await this.signer.getAddress();
+        const from = await (this.signer as IAbstractSigner).getAddress();
 
         const noncePayload = await this.getNonce(from, TransactionType.SAFE);
 
@@ -104,10 +122,19 @@ export class RelayClient {
 
         const safeContractConfig = this.contractConfig.SafeContracts;
 
-        const request = await buildSafeTransactionRequest(this.signer, args, safeContractConfig, metadata);
+        const request = await buildSafeTransactionRequest(
+            this.signer as IAbstractSigner,
+            args,
+            safeContractConfig,
+            metadata,
+        );
+
         console.log(`Client side safe request creation took: ${(Date.now() - start) / 1000} seconds`);
+        
         const requestPayload = JSON.stringify(request);
+        
         const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload)
+        
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
             resp.state,
@@ -120,13 +147,21 @@ export class RelayClient {
      * Deploys a safe 
      * @returns 
      */
-    public async deploySafe(): Promise<RelayerTransactionResponse> {
-        if (this.signer == undefined) {
-            throw new Error("missing signer");
+    public async deploy(): Promise<RelayerTransactionResponse> {
+        this.signerNeeded();
+        const safe = await this.getExpectedSafe();
+
+        const deployed = await this.getDeployed(safe);
+        if (deployed) {
+            throw SAFE_DEPLOYED;
         }
-        
+        console.log(`Deploying safe ${safe}...`);
+        return this._deploy();
+    }
+
+    private async _deploy(): Promise<RelayerTransactionResponse> {
         const start = Date.now();
-        const from = await this.signer?.getAddress();
+        const from = await (this.signer as IAbstractSigner).getAddress();
         const args: SafeCreateTransactionArgs = {
             from: from,
             chainId: this.chainId,
@@ -136,16 +171,33 @@ export class RelayClient {
         };
         const safeContractConfig = this.contractConfig.SafeContracts;
 
-        const request = await buildSafeCreateTransactionRequest(this.signer, safeContractConfig, args);
+        const request = await buildSafeCreateTransactionRequest(
+            this.signer as IAbstractSigner,
+            safeContractConfig,
+            args
+        );
+
         console.log(`Client side deploy request creation took: ${(Date.now() - start) / 1000} seconds`);
+        
         const requestPayload = JSON.stringify(request);
+
         const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload)
+        
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
             resp.state,
             resp.transactionHash,
             this,
         );
+    }
+
+    private async getDeployed(safe: string): Promise<boolean> {        
+        const resp: GetDeployedResponse = await this.send(
+            `${GET_DEPLOYED}`,
+            GET,
+            {params: { address: safe }},
+        );
+        return resp.deployed;
     }
 
     /**
@@ -178,14 +230,14 @@ export class RelayClient {
                     return txn;
                 }
                 if (failState != undefined && txn.state == failState) {
-                    // Return undefined if txn reaches the fail state
+                    console.error(`txn ${transactionId} failed onchain! Transaction hash: ${txn.transactionHash}`);
                     return undefined;
                 }
             }
             pollCount++
             await sleep(pollFreq);
         }
-        console.log(`Transaction not found or not in given states, timing out`);
+        console.log(`Transaction not found or not in given states, timing out!`);
     }
 
     private async sendAuthedRequest(
@@ -243,5 +295,16 @@ export class RelayClient {
     ): Promise<any> {
         const resp = await this.httpClient.send(`${this.relayerUrl}${endpoint}`, method, options);
         return resp.data;
+    }
+
+    private signerNeeded(): void {
+        if (this.signer === undefined) {
+            throw SIGNER_UNAVAILABLE;
+        }
+    }
+
+    private async getExpectedSafe(): Promise<string> {
+        const address = await (this.signer as IAbstractSigner).getAddress();
+        return deriveSafe(address, this.contractConfig.SafeContracts.SafeFactory);
     }
 }
