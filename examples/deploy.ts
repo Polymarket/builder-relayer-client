@@ -1,40 +1,74 @@
-import { config as dotenvConfig } from "dotenv";
-import { resolve } from "path";
 import { RelayClient } from "../src/client";
-import { BuilderApiKeyCreds, BuilderConfig } from "@polymarket/builder-signing-sdk";
-import { privateKeyToAccount } from "viem/accounts";
-import { createWalletClient, Hex, http } from "viem";
-import { polygon } from "viem/chains";
+import {
+    ConfigurationFactory,
+    RelayClientFactory,
+    BaseExample,
+    ConsoleErrorHandler,
+    OperationResult
+} from "./shared/utils";
 
-dotenvConfig({ path: resolve(__dirname, "../.env") });
+/**
+ * Safe deployment operation following Single Responsibility Principle
+ */
+class SafeDeployer extends BaseExample {
+    private client: RelayClient;
 
-async function main() {
-    console.log(`Starting...`);
-    
-    const relayerUrl = `${process.env.RELAYER_URL}`;
-    const chainId = parseInt(`${process.env.CHAIN_ID}`);
-    const pk = privateKeyToAccount(`${process.env.PK}` as Hex);
-    const wallet = createWalletClient({account: pk, chain: polygon, transport: http(`${process.env.RPC_URL}`)});
+    constructor() {
+        super(new ConsoleErrorHandler());
+        this.client = RelayClientFactory.createClient();
+    }
 
-    const builderCreds: BuilderApiKeyCreds = {
-        key: `${process.env.BUILDER_API_KEY}`,
-        secret: `${process.env.BUILDER_SECRET}`,
-        passphrase: `${process.env.BUILDER_PASS_PHRASE}`,
-    };
-    
-    const builderConfig = new BuilderConfig({
-        localBuilderCreds: builderCreds
-    });
+    protected async performOperation(): Promise<OperationResult> {
+        console.log('Deploying Safe contract...');
+        const deployResponse = await this.client.deploy();
 
-    const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+        console.log('Waiting for deployment confirmation...');
+        const result = await deployResponse.wait();
 
-    const resp = await client.deploy();
-    const res = await resp.wait();
-    
-    console.log(res);
+        if (!result) {
+            throw new Error('Safe deployment failed');
+        }
 
-    console.log(`Done!`);
+        this.displayDeploymentResults(result);
+        return { success: true, data: result };
+    }
 
+    private displayDeploymentResults(result: any): void {
+        console.log('\nSafe deployed successfully!');
+        console.log('Transaction Hash:', result.transactionHash);
+        console.log('Safe Address:', result.proxyAddress);
+        console.log('Gas Used:', result.gasUsed);
+    }
 }
 
-main();
+/**
+ * Entry point for Safe deployment example
+ */
+async function main(): Promise<void> {
+    try {
+        const config = ConfigurationFactory.createEnvironmentConfig();
+        console.log('Environment configuration validated');
+        console.log('Builder Auth:', config.builderCredentials ? 'Enabled' : 'Disabled');
+
+        const deployer = new SafeDeployer();
+        const result = await deployer.execute();
+
+        if (!result.success) {
+            process.exit(1);
+        }
+
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error('Setup failed:', error.message);
+        } else {
+            console.error('Setup failed:', error);
+        }
+        process.exit(1);
+    }
+}
+
+// Execute the main function with proper error handling
+main().catch((error) => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+});
