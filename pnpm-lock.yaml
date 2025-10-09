@@ -12,8 +12,8 @@ importers:
         specifier: 0.0.5
         version: 0.0.5
       '@polymarket/builder-signing-sdk':
-        specifier: ^0.0.6
-        version: 0.0.6
+        specifier: ^0.0.7
+        version: 0.0.7
       axios:
         specifier: ^0.27.2
         version: 0.27.2
@@ -31,7 +31,7 @@ importers:
         version: 5.9.3
       viem:
         specifier: ^2.31.4
-        version: 2.37.11(typescript@5.9.3)
+        version: 2.38.0(typescript@5.9.3)
     devDependencies:
       '@types/chai':
         specifier: 5.2.2
@@ -41,7 +41,7 @@ importers:
         version: 10.0.10
       '@types/node':
         specifier: ^18.7.18
-        version: 18.19.129
+        version: 18.19.130
       '@types/ws':
         specifier: ^8.5.3
         version: 8.18.1
@@ -348,8 +348,8 @@ packages:
   '@polymarket/abstract-signer@0.0.5':
     resolution: {integrity: sha512-RsTyg3rXYuTGt+qQtAPx2dj/KKQPI7qozfyA61wcPEovUs1+ICn26toOr7I4V41xzXK+BYHViM/LCYiCAMVTMA==}
 
-  '@polymarket/builder-signing-sdk@0.0.6':
-    resolution: {integrity: sha512-XztaELyoiYUQt0uBdhinn+VMJAGGmjxH6NGLGd5VPhgaE6fyDC0tqHWy6H9CraKEphxrkHe7wQR4BAz1xAXvBQ==}
+  '@polymarket/builder-signing-sdk@0.0.7':
+    resolution: {integrity: sha512-EQ47V8QkZx7UKQriAA9YhlZoObjLG3lcmE1pk4NkT7WHrGw6UixHFjuAzCRg7o1EAE83K4D5rcrw1p3Izh9lCg==}
 
   '@scure/base@1.2.6':
     resolution: {integrity: sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg==}
@@ -373,8 +373,8 @@ packages:
   '@types/mocha@10.0.10':
     resolution: {integrity: sha512-xPyYSz1cMPnJQhl0CLMH68j3gprKZaTjG3s5Vi+fDgx+uhG9NOXwbVt52eFS8ECyXhyKcjDLCBEqBExKuiZb7Q==}
 
-  '@types/node@18.19.129':
-    resolution: {integrity: sha512-hrmi5jWt2w60ayox3iIXwpMEnfUvOLJCRtrOPbHtH15nTjvO7uhnelvrdAs0dO0/zl5DZ3ZbahiaXEVb54ca/A==}
+  '@types/node@18.19.130':
+    resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
@@ -713,8 +713,8 @@ packages:
     resolution: {integrity: sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==}
     engines: {node: '>= 0.4'}
 
-  get-tsconfig@4.10.1:
-    resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
+  get-tsconfig@4.12.0:
+    resolution: {integrity: sha512-LScr2aNr2FbjAjZh2C6X6BxRx1/x+aTDExct/xyq2XKbYOiG5c0aK7pMsSuyc0brz3ibr/lbQiHD9jzt4lccJw==}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -1093,8 +1093,8 @@ packages:
   util@0.10.4:
     resolution: {integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==}
 
-  viem@2.37.11:
-    resolution: {integrity: sha512-JEwUftUmJin3RUSbluKj2yR6M7Ye0AxqowhyTz396RkPlg1wwImkHocKtuvkzEa51EdSGsOCHf/qxAfqSowRTQ==}
+  viem@2.38.0:
+    resolution: {integrity: sha512-YU5TG8dgBNeYPrCMww0u9/JVeq2ZCk9fzk6QybrPkBooFysamHXL1zC3ua10aLPt9iWoA/gSVf1D9w7nc5B1aA==}
     peerDependencies:
       typescript: '>=5.0.4'
     peerDependenciesMeta:
@@ -1541,15 +1541,15 @@ snapshots:
       ethers: 5.7.2
       ts-node: 9.1.1(typescript@5.9.3)
       typescript: 5.9.3
-      viem: 2.37.11(typescript@5.9.3)
+      viem: 2.38.0(typescript@5.9.3)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
       - zod
 
-  '@polymarket/builder-signing-sdk@0.0.6':
+  '@polymarket/builder-signing-sdk@0.0.7':
     dependencies:
-      '@types/node': 18.19.129
+      '@types/node': 18.19.130
       axios: 1.12.2
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -1578,13 +1578,13 @@ snapshots:
 
   '@types/mocha@10.0.10': {}
 
-  '@types/node@18.19.129':
+  '@types/node@18.19.130':
     dependencies:
       undici-types: 5.26.5
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 18.19.129
+      '@types/node': 18.19.130
 
   '@ungap/promise-all-settled@1.1.2': {}
 
@@ -1942,7 +1942,7 @@ snapshots:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.1
 
-  get-tsconfig@4.10.1:
+  get-tsconfig@4.12.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
@@ -2316,7 +2316,7 @@ snapshots:
   tsx@4.20.6:
     dependencies:
       esbuild: 0.25.10
-      get-tsconfig: 4.10.1
+      get-tsconfig: 4.12.0
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -2335,7 +2335,7 @@ snapshots:
     dependencies:
       inherits: 2.0.3
 
-  viem@2.37.11(typescript@5.9.3):
+  viem@2.38.0(typescript@5.9.3):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
