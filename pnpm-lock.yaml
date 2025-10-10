@@ -12,8 +12,8 @@ importers:
         specifier: 0.0.5
         version: 0.0.5
       '@polymarket/builder-signing-sdk':
-        specifier: ^0.0.7
-        version: 0.0.7
+        specifier: ^0.0.8
+        version: 0.0.8
       axios:
         specifier: ^0.27.2
         version: 0.27.2
@@ -348,8 +348,8 @@ packages:
   '@polymarket/abstract-signer@0.0.5':
     resolution: {integrity: sha512-RsTyg3rXYuTGt+qQtAPx2dj/KKQPI7qozfyA61wcPEovUs1+ICn26toOr7I4V41xzXK+BYHViM/LCYiCAMVTMA==}
 
-  '@polymarket/builder-signing-sdk@0.0.7':
-    resolution: {integrity: sha512-EQ47V8QkZx7UKQriAA9YhlZoObjLG3lcmE1pk4NkT7WHrGw6UixHFjuAzCRg7o1EAE83K4D5rcrw1p3Izh9lCg==}
+  '@polymarket/builder-signing-sdk@0.0.8':
+    resolution: {integrity: sha512-rZLCFxEdYahl5FiJmhe22RDXysS1ibFJlWz4NT0s3itJRYq3XJzXXHXEZkAQplU+nIS1IlbbKjA4zDQaeCyYtg==}
 
   '@scure/base@1.2.6':
     resolution: {integrity: sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg==}
@@ -1547,7 +1547,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@polymarket/builder-signing-sdk@0.0.7':
+  '@polymarket/builder-signing-sdk@0.0.8':
     dependencies:
       '@types/node': 18.19.130
       axios: 1.12.2
