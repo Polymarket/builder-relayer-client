@@ -61,9 +61,14 @@ const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
 ```typescript
 import { BuilderConfig } from "@polymarket/builder-signing-sdk";
 
-const builderConfig = new BuilderConfig({
-  remoteBuilderSignerUrl: "http://localhost:3000/sign",
-});
+const builderConfig = new BuilderConfig(
+  {
+    remoteBuilderConfig: {
+      url: "http://localhost:3000/sign",
+      token: `${process.env.MY_AUTH_TOKEN}`
+    }
+  },
+);
 
 const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
 ```
