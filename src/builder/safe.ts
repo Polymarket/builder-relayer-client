@@ -1,5 +1,5 @@
 
-import { IAbstractSigner } from "@polymarket/abstract-signer";
+import { IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import { hashTypedData, Hex, zeroAddress } from "viem";
 
 import { 

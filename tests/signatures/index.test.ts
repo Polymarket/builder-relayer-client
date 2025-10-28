@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { createAbstractSigner, IAbstractSigner } from "@polymarket/abstract-signer";
+import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
