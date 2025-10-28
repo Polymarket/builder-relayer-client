@@ -118,7 +118,7 @@ const approvalTx = createApprovalTransaction(
   "0x4d97dcd97ec945f40cf65f87097ace5ea0476045"  // CTF
 );
 
-const response = await client.executeSafeTransactions([approvalTx], "usdc approval on the CTF");
+const response = await client.execute([approvalTx], "usdc approval on the CTF");
 const result = await response.wait();
 console.log("Approval completed:", result.transactionHash);
 ```
@@ -126,7 +126,7 @@ console.log("Approval completed:", result.transactionHash);
 ### Deploy Safe Contract
 
 ```typescript
-const response = await client.deploySafe();
+const response = await client.deploy();
 const result = await response.wait();
 
 if (result) {
