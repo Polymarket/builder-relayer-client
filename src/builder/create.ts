@@ -6,7 +6,7 @@ import {
 } from "../types";
 import { SAFE_FACTORY_NAME } from "../constants";
 import { deriveSafe } from "./derive";
-import { IAbstractSigner } from "@polymarket/abstract-signer";
+import { IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import { SafeContractConfig } from "../config";
 import { Hex } from "viem";
 

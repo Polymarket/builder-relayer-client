@@ -1,7 +1,7 @@
 import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { WalletClient, zeroAddress } from "viem";
-import { createAbstractSigner, IAbstractSigner } from "@polymarket/abstract-signer";
+import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import {
     GET,
     POST,
