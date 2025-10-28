@@ -1,7 +1,7 @@
 {
     "name": "@polymarket/builder-relayer-client",
     "description": "Client for Polymarket relayers",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
@@ -35,7 +35,7 @@
         "@polymarket/builder-signing-sdk": "^0.0.8",
         "axios": "^0.27.2",
         "browser-or-node": "^3.0.0",
-        "ethers": "5.7.2",
+        "ethers": "5.8.0",
         "tsx": "^4.20.3",
         "typescript": "^5.8.3",
         "viem": "^2.31.4"
