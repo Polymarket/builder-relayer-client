@@ -137,3 +137,48 @@ if (result) {
   console.log("Safe deployment failed");
 }
 ```
+
+### Merge Positions (Conditional Token)
+
+```typescript
+const ctfInterface = new Interface([
+    "function mergePositions(address collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint[] partition, uint amount)"
+]);
+
+const mergeTx: SafeTransaction = {
+    to: ctfAddress, // 0x4D97DCd97eC945f40cF65F87097ACe5EA0476045
+    operation: OperationType.Call,
+    data: ctfInterface.encodeFunctionData("mergePositions", [
+        collateralToken, // 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+        parentCollectionId, // 0x0000000000000000000000000000000000000000000000000000000000000000
+        conditionId,
+        partition, // [1, 2]
+        amount
+    ]),
+    value: "0"
+};
+
+const response = await client.executeSafeTransactions([mergeTx], "Merge position");
+const result = await response.wait();
+```
+
+### Merge Positions (Negative Risk)
+
+```typescript
+const negRiskInterface = new Interface([
+    "function mergePositions(bytes32 conditionId, uint256 amount)"
+]);
+
+const mergeTx: SafeTransaction = {
+    to: negRiskAdapterAddress, // 0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296
+    operation: OperationType.Call,
+    data: negRiskInterface.encodeFunctionData("mergePositions", [
+        conditionId,
+        amount
+    ]),
+    value: "0"
+};
+
+const response = await client.executeSafeTransactions([mergeTx], "Merge position");
+const result = await response.wait();
+```
