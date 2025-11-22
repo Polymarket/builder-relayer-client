@@ -191,7 +191,7 @@ export class RelayClient {
         );
     }
 
-    private async getDeployed(safe: string): Promise<boolean> {        
+    public async getDeployed(safe: string): Promise<boolean> {        
         const resp: GetDeployedResponse = await this.send(
             `${GET_DEPLOYED}`,
             GET,
