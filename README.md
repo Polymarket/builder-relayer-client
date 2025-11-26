@@ -137,3 +137,105 @@ if (result) {
   console.log("Safe deployment failed");
 }
 ```
+
+### Redeem Positions
+
+#### CTF (ConditionalTokensFramework) Redeem
+
+```typescript
+import { ethers } from "ethers";
+import { Interface } from "ethers/lib/utils";
+import { OperationType, SafeTransaction } from "@polymarket/builder-relayer-client";
+
+const ctfRedeemInterface = new Interface([
+  {
+    "constant": false,
+    "inputs": [
+      {"name": "collateralToken", "type": "address"},
+      {"name": "parentCollectionId", "type": "bytes32"},
+      {"name": "conditionId", "type": "bytes32"},
+      {"name": "indexSets", "type": "uint256[]"}
+    ],
+    "name": "redeemPositions",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]);
+
+function createCtfRedeemTransaction(
+  ctfAddress: string,
+  collateralToken: string,
+  conditionId: string
+): SafeTransaction {
+  return {
+    to: ctfAddress,
+    operation: OperationType.Call,
+    data: ctfRedeemInterface.encodeFunctionData("redeemPositions", [
+      collateralToken,
+      ethers.constants.HashZero, // parentCollectionId
+      conditionId,
+      [1, 2] // indexSets for yes/no outcomes
+    ]),
+    value: "0"
+  };
+}
+
+// Execute the redeem
+const ctfAddress = "0x4d97dcd97ec945f40cf65f87097ace5ea0476045";
+const usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+const conditionId = "0x..."; // Your condition ID
+
+const redeemTx = createCtfRedeemTransaction(ctfAddress, usdcAddress, conditionId);
+const response = await client.execute([redeemTx], "redeem positions");
+const result = await response.wait();
+console.log("Redeem completed:", result.transactionHash);
+```
+
+#### NegRisk Adapter Redeem
+
+```typescript
+import { ethers } from "ethers";
+import { Interface } from "ethers/lib/utils";
+import { OperationType, SafeTransaction } from "@polymarket/builder-relayer-client";
+
+const nrAdapterRedeemInterface = new Interface([
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "_conditionId", "type": "bytes32"},
+      {"internalType": "uint256[]", "name": "_amounts", "type": "uint256[]"}
+    ],
+    "name": "redeemPositions",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]);
+
+function createNrAdapterRedeemTransaction(
+  adapterAddress: string,
+  conditionId: string,
+  redeemAmounts: string[] // [yesAmount, noAmount]
+): SafeTransaction {
+  return {
+    to: adapterAddress,
+    operation: OperationType.Call,
+    data: nrAdapterRedeemInterface.encodeFunctionData("redeemPositions", [
+      conditionId,
+      redeemAmounts.map(amount => ethers.BigNumber.from(amount))
+    ]),
+    value: "0"
+  };
+}
+
+// Execute the redeem
+const negRiskAdapter = "0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296";
+const conditionId = "0x..."; // Your condition ID
+const redeemAmounts = ["111000000", "0"]; // [yes tokens, no tokens]
+
+const redeemTx = createNrAdapterRedeemTransaction(negRiskAdapter, conditionId, redeemAmounts);
+const response = await client.execute([redeemTx], "redeem positions");
+const result = await response.wait();
+console.log("Redeem completed:", result.transactionHash);
+```

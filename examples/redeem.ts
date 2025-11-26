@@ -101,8 +101,7 @@ async function main() {
 
     // Set your values here
     const negRisk = false;
-    // const conditionId = "0x...."; // conditionId to redeem
-    const conditionId = "0x33e9240dc01dd4bc2c1d7b269dc816e50a1d4ab9ef385e8d734626f50ba1f1e8";
+    const conditionId = "0x...."; // conditionId to redeem
     
     // amounts to redeem per outcome, only necessary for neg risk
     // Must be an array of length 2 with:
