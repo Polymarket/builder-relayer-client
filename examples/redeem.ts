@@ -90,9 +90,9 @@ async function main() {
     const wallet = createWalletClient({account: pk, chain: polygon, transport: http(`${process.env.RPC_URL}`)});
 
     const builderCreds: BuilderApiKeyCreds = {
-        key: `${process.env.BUILDER_API_KEY_PROD}`,
-        secret: `${process.env.BUILDER_SECRET_PROD}`,
-        passphrase: `${process.env.BUILDER_PASS_PHRASE_PROD}`,
+        key: `${process.env.BUILDER_API_KEY}`,
+        secret: `${process.env.BUILDER_SECRET}`,
+        passphrase: `${process.env.BUILDER_PASS_PHRASE}`,
     };
     const builderConfig = new BuilderConfig({
         localBuilderCreds: builderCreds
