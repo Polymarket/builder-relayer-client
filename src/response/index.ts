@@ -30,7 +30,7 @@ export class ClientRelayerTransactionResponse implements RelayerTransactionRespo
                 RelayerTransactionState.STATE_CONFIRMED,
             ],
             RelayerTransactionState.STATE_FAILED,
-            30,
+            100, // max polls
         );
     }
 }

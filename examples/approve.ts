@@ -1,36 +1,39 @@
 import { config as dotenvConfig } from "dotenv";
-import { ethers } from "ethers";
-import { Interface } from "ethers/lib/utils";
 import { resolve } from "path";
 import { RelayClient, OperationType, SafeTransaction } from "../src";
-import { createWalletClient, Hex, http } from "viem";
+import { encodeFunctionData, prepareEncodeFunctionData, createWalletClient, Hex, http, maxUint256 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { polygon } from "viem/chains";
 import { BuilderApiKeyCreds, BuilderConfig } from "@polymarket/builder-signing-sdk";
 
 dotenvConfig({ path: resolve(__dirname, "../.env") });
 
-const erc20Interface = new Interface([
-        {
-            "constant": false,"inputs": 
-            [{"name": "_spender","type": "address"},{"name": "_value","type": "uint256"}],
-            "name": "approve",
-            "outputs": [{"name": "","type": "bool"}],
-            "payable": false,
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
-    ]
-);
+const erc20Abi = [
+    {
+        "constant": false,"inputs": 
+        [{"name": "_spender","type": "address"},{"name": "_value","type": "uint256"}],
+        "name": "approve",
+        "outputs": [{"name": "","type": "bool"}],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+];
+
+const erc20 = prepareEncodeFunctionData({
+    abi: erc20Abi,
+    functionName: "approve",
+});
 
 function createUsdcApproveTxn(
     token: string,
     spender: string,
 ): SafeTransaction {
+    const calldata = encodeFunctionData({...erc20, args: [spender, maxUint256]});
     return {
         to: token,
         operation: OperationType.Call,
-        data: erc20Interface.encodeFunctionData("approve", [spender, ethers.constants.MaxUint256]),
+        data: calldata,
         value: "0",
     }
 }
