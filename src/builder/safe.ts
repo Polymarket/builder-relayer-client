@@ -1,26 +1,29 @@
-
 import { IAbstractSigner } from "@polymarket/builder-abstract-signer";
-import { hashTypedData, Hex, zeroAddress } from "viem";
+import { Hex, zeroAddress } from "viem";
 
-import { 
+import {
     OperationType,
+    SafeMessageData,
     SafeTransaction,
     SafeTransactionArgs,
     SignatureParams,
     TransactionRequest,
-    TransactionType 
+    TransactionType,
 } from "../types";
 import { deriveSafe } from "./derive";
 import { createSafeMultisendTransaction } from "../encode/safe";
 import { SafeContractConfig } from "../config";
 import { splitAndPackSig } from "../utils";
 
-
-async function createSafeSignature(signer: IAbstractSigner, structHash: string) : Promise<string> {
-    return signer.signMessage(structHash);
+async function createSafeSignature(
+    signer: IAbstractSigner,
+    messageData: SafeMessageData,
+): Promise<string> {
+    const { domain, types, message, primaryType } = messageData;
+    return signer.signTypedData(domain, types, message, primaryType);
 }
 
-function createStructHash(
+function getMessageData(
     chainId: number,
     safe: string,
     to: string,
@@ -32,8 +35,8 @@ function createStructHash(
     gasPrice: string,
     gasToken: string,
     refundReceiver: string,
-    nonce: string
-) : string {
+    nonce: string,
+): SafeMessageData {
     const domain = {
         chainId: chainId,
         verifyingContract: safe as Hex,
@@ -69,11 +72,7 @@ function createStructHash(
         nonce: nonce,
     };
 
-    // // viem hashTypedData
-    // const structHash = _TypedDataEncoder.hash(domain, types, values);
-
-    const structHash = hashTypedData({primaryType: "SafeTx", domain: domain, types: types, message: values});
-    return structHash;
+    return { primaryType: "SafeTx", domain: domain, types: types, message: values };
 }
 
 export function aggregateTransaction(txns: SafeTransaction[], safeMultisend: string): SafeTransaction {
@@ -104,7 +103,7 @@ export async function buildSafeTransactionRequest(
     const safeAddress = deriveSafe(args.from, safeFactory);
 
     // Generate the struct hash
-    const structHash = createStructHash(
+    const messageData = getMessageData(
         args.chainId,
         safeAddress,
         transaction.to,
@@ -119,7 +118,7 @@ export async function buildSafeTransactionRequest(
         args.nonce,
     );
 
-    const sig = await createSafeSignature(signer, structHash);
+    const sig = await createSafeSignature(signer, messageData);
 
     // Split the sig then pack it into Gnosis accepted rsv format
     const packedSig = splitAndPackSig(sig)

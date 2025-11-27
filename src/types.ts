@@ -1,3 +1,5 @@
+import { TypedData, TypedDataDomain } from "viem";
+
 export enum TransactionType {
     SAFE = "SAFE",
     SAFE_CREATE = "SAFE-CREATE"
@@ -103,4 +105,24 @@ export interface RelayerTransactionResponse {
 
 export interface GetDeployedResponse {
     deployed: boolean;
+}
+
+export interface SafeTransactionData {
+    to: string;
+    value: string;
+    data: string;
+    operation: OperationType;
+    safeTxGas: string;
+    baseGas: string;
+    gasPrice: string;
+    gasToken: string;
+    refundReceiver: string;
+    nonce: string;
+}
+
+export interface SafeMessageData {
+    primaryType: string;
+    domain: TypedDataDomain;
+    types: TypedData;
+    message: SafeTransactionData;
 }
