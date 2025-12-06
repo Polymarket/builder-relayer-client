@@ -9,18 +9,26 @@ import {
     RequestOptions,
 } from "./http-helpers";
 import { 
+    CallType,
     GetDeployedResponse,
     NoncePayload,
+    OperationType,
+    ProxyTransaction,
+    ProxyTransactionArgs,
     RelayerTransaction,
     RelayerTransactionResponse,
+    RelayerTxType,
+    RelayPayload,
     SafeCreateTransactionArgs,
     SafeTransaction,
     SafeTransactionArgs,
+    Transaction,
     TransactionType
 } from "./types";
 import { 
     GET_DEPLOYED,
     GET_NONCE,
+    GET_RELAY_PAYLOAD,
     GET_TRANSACTION,
     GET_TRANSACTIONS,
     SUBMIT_TRANSACTION,
@@ -28,6 +36,7 @@ import {
 import { 
     buildSafeTransactionRequest,
     buildSafeCreateTransactionRequest,
+    buildProxyTransactionRequest,
     deriveSafe,
 } from "./builder";
 import { sleep } from "./utils";
@@ -35,12 +44,15 @@ import { ClientRelayerTransactionResponse } from "./response";
 import { ContractConfig, getContractConfig } from "./config";
 import { BuilderConfig, BuilderHeaderPayload } from "@polymarket/builder-signing-sdk";
 import { SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
+import { encodeProxyTransactionData } from "./encode";
 
 
 export class RelayClient {
     readonly relayerUrl: string;
 
     readonly chainId: number;
+
+    readonly relayTxType: RelayerTxType;
 
     readonly contractConfig: ContractConfig;
 
@@ -50,19 +62,21 @@ export class RelayClient {
 
     readonly builderConfig?: BuilderConfig;
 
-    __deployed: boolean;
-
     constructor(
         relayerUrl: string,
         chainId: number,
         signer?: Wallet | JsonRpcSigner | WalletClient,
         builderConfig?: BuilderConfig,
+        relayTxType?: RelayerTxType,
     ) {
         this.relayerUrl = relayerUrl.endsWith("/") ? relayerUrl.slice(0, -1) : relayerUrl;
         this.chainId = chainId;
+        if (relayTxType == undefined) {
+            relayTxType = RelayerTxType.SAFE;
+        }
+        this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
-        this.__deployed = false;
         
         if (signer != undefined) {
             this.signer = createAbstractSigner(chainId, signer);
@@ -81,6 +95,14 @@ export class RelayClient {
         );
     }
 
+    public async getRelayPayload(signerAddress: string, signerType: string): Promise<RelayPayload> {
+        return this.send(
+            `${GET_RELAY_PAYLOAD}`,
+            GET,
+            {params: { address: signerAddress, type: signerType }}
+        );
+    }
+
     public async getTransaction(transactionId: string): Promise<RelayerTransaction[]> {
         return this.send(
             `${GET_TRANSACTION}`,
@@ -94,13 +116,76 @@ export class RelayClient {
     }
 
     /**
+     * Executes a batch of transactions
+     * @param txns 
+     * @param metadata 
+     * @returns 
+     */
+    public async execute(txns: Transaction[], metadata?: string): Promise<RelayerTransactionResponse> {
+        this.signerNeeded();
+        switch (this.relayTxType) {
+            case RelayerTxType.SAFE:
+                return this.executeSafeTransactions(
+                    txns.map(txn => ({
+                        to: txn.to,
+                        operation: OperationType.Call,
+                        data: txn.data,
+                        value: "0",
+                    })),
+                    metadata
+                );
+            case RelayerTxType.PROXY:
+                return this.executeProxyTransactions(
+                    txns.map(txn => ({
+                        to: txn.to,
+                        typeCode: CallType.Call,
+                        data: txn.data,
+                        value: "0",
+                    })),
+                    metadata
+                );
+            default:
+                throw new Error(`Unsupported relay transaction type: ${this.relayTxType}`);
+        }
+    }
+
+    public async executeProxyTransactions(txns: ProxyTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
+        this.signerNeeded();
+        console.log(`Executing proxy transactions...`);
+        const start = Date.now();
+        const from = await this.signer!.getAddress();
+        const rp = await this.getRelayPayload(from, TransactionType.PROXY);
+        const args: ProxyTransactionArgs = {
+            from: from,
+            gasPrice: "0",
+            data: encodeProxyTransactionData(txns),
+            relay: rp.address,
+            nonce: rp.nonce,
+        }
+        const proxyContractConfig = this.contractConfig.ProxyContracts;
+        const request = await buildProxyTransactionRequest(this.signer!, args, proxyContractConfig, metadata);
+        console.log(`Client side proxy request creation took: ${(Date.now() - start) / 1000} seconds`);
+        
+        const requestPayload = JSON.stringify(request);
+        
+        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload)
+        return new ClientRelayerTransactionResponse(
+            resp.transactionID,
+            resp.state,
+            resp.transactionHash,
+            this,
+        );
+    }
+
+    /**
      * Executes a batch of safe transactions
      * @param txns 
      * @param metadata 
      * @returns 
      */
-    public async execute(txns: SafeTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
+    public async executeSafeTransactions(txns: SafeTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
         this.signerNeeded();
+        console.log(`Executing safe transactions...`);
         const safe = await this.getExpectedSafe();
 
         const deployed = await this.getDeployed(safe);
@@ -133,7 +218,7 @@ export class RelayClient {
         
         const requestPayload = JSON.stringify(request);
         
-        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload)
+        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload);
         
         return new ClientRelayerTransactionResponse(
             resp.transactionID,

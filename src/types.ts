@@ -1,11 +1,24 @@
+
+export enum RelayerTxType {
+    SAFE = "SAFE",
+    PROXY = "PROXY"
+}
+
 export enum TransactionType {
     SAFE = "SAFE",
+    PROXY = "PROXY",
     SAFE_CREATE = "SAFE-CREATE"
 }
 
-
 export interface SignatureParams {
     gasPrice?: string;
+
+    // Proxy RelayHub sig params
+    relayerFee?: string;
+    // gasPrice: string; // User supplied minimum gas price
+    gasLimit?: string; // User supplied gas limit
+    relayHub?: string; // Relay Hub Address
+    relay?: string; // Relayer address
 
 	// SAFE sig parameters
 	operation?: string;
@@ -21,7 +34,16 @@ export interface SignatureParams {
     paymentReceiver?: string;
 }
 
+export interface AddressPayload {
+    address: string;
+}
+
 export interface NoncePayload {
+    nonce: string;
+}
+
+export interface RelayPayload {
+    address: string;
     nonce: string;
 }
 
@@ -37,6 +59,19 @@ export interface TransactionRequest {
     metadata?:          string;
 }
 
+export enum CallType {
+    Invalid = "0",
+    Call = "1",
+    DelegateCall = "2",
+}
+  
+export interface ProxyTransaction {
+    to: string;
+    typeCode: CallType;
+    data: string;
+    value: string;
+}
+
 // Safe Transactions
 export enum OperationType {
     Call, // 0
@@ -46,6 +81,12 @@ export enum OperationType {
 export interface SafeTransaction {
     to: string;
     operation: OperationType
+    data: string;
+    value: string;
+}
+
+export interface Transaction {
+    to: string;
     data: string;
     value: string;
 }
@@ -63,6 +104,15 @@ export interface SafeCreateTransactionArgs {
     paymentToken: string;
     payment: string;
     paymentReceiver: string;
+}
+
+export interface ProxyTransactionArgs {
+    from: string;
+    nonce: string;
+    gasPrice: string;
+    gasLimit?: string;
+    data: string;
+    relay: string;
 }
 
 export enum RelayerTransactionState {
