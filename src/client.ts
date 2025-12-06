@@ -240,6 +240,8 @@ export class RelayClient {
      */
     public async deploy(): Promise<RelayerTransactionResponse> {
         this.signerNeeded();
+        this.mustBeSafe();
+
         const safe = await this.getExpectedSafe();
 
         const deployed = await this.getDeployed(safe);
@@ -391,6 +393,12 @@ export class RelayClient {
     private signerNeeded(): void {
         if (this.signer === undefined) {
             throw SIGNER_UNAVAILABLE;
+        }
+    }
+
+    private mustBeSafe(): void {
+        if (this.relayTxType != RelayerTxType.SAFE) {
+            throw new Error("operation only supported for safe tx type");
         }
     }
 
