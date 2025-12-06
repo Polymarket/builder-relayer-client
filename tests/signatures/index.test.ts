@@ -7,10 +7,13 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { createWalletClient, http, WalletClient, zeroAddress } from "viem";
 import { polygon } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-
-import { buildSafeCreateTransactionRequest, buildSafeTransactionRequest } from "../../src/builder";
+import { encodeProxyTransactionData } from "../../src/encode";
+import { buildProxyTransactionRequest, buildSafeCreateTransactionRequest, buildSafeTransactionRequest } from "../../src/builder";
 import {
+    CallType,
     OperationType,
+    ProxyTransaction,
+    ProxyTransactionArgs,
     SafeCreateTransactionArgs, 
     SafeTransaction, 
     SafeTransactionArgs, 
@@ -47,12 +50,52 @@ describe("setup", () => {
         transport: http(rpcUrl),
     });
 
+    const proxyTransaction: ProxyTransaction = {
+        to: usdc,
+        typeCode: CallType.Call,
+        value: "0",
+        data: approveCalldata,
+    };
+
     const safeTransaction: SafeTransaction= {
         to: usdc,
         operation: OperationType.Call,
         value: "0",
         data: approveCalldata
     }
+
+    describe("build proxy transaction request", async () => {
+        let req: TransactionRequest;
+        const expectedProxyTxnSig = "0x4c18e2d2294a00d686714aff8e7936ab657cb4655dfccb2b556efadcb7e835f800dc2fecec69c501e29bb36ecb54b4da6b7c410c4dc740a33af2afde2b77297e1b";
+        const args: ProxyTransactionArgs = {
+            from: address,
+            gasLimit: "85338",
+            gasPrice: "0",
+            nonce: "0",
+            relay: "0xae700edfd9ab986395f3999fe11177b9903a52f1",
+            data: encodeProxyTransactionData([proxyTransaction]),
+        };
+
+        it("ethers creates a valid proxy signature", async () => {
+            signer = createAbstractSigner(chainId, ethersWallet);
+            req = await buildProxyTransactionRequest(
+                signer,
+                args,
+                contractConfig.ProxyContracts,
+            );
+            expect(req.signature).equal(expectedProxyTxnSig);
+        });
+
+        it("viem creates a valid proxy signature", async () => {
+            signer = createAbstractSigner(chainId, viemWalletClient);
+            req = await buildProxyTransactionRequest(
+                signer,
+                args,
+                contractConfig.ProxyContracts,
+            );
+            expect(req.signature).equal(expectedProxyTxnSig);
+        });
+    });
 
     describe("build safe transaction request", async () => {
         let req: TransactionRequest;

@@ -1,6 +1,6 @@
 import { config as dotenvConfig } from "dotenv";
 import { resolve } from "path";
-import { RelayClient, OperationType, SafeTransaction } from "../src";
+import { RelayClient, Transaction } from "../src";
 import { encodeFunctionData, prepareEncodeFunctionData, createWalletClient, Hex, http, zeroHash } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { polygon } from "viem/chains";
@@ -56,11 +56,10 @@ function createCtfRedeemTxn(
     contract: string,
     conditionId: string,
     collateral: string,
-): SafeTransaction {
+): Transaction {
     const calldata = encodeFunctionData({...ctf, args: [collateral, zeroHash, conditionId, [1, 2]]});
     return {
             to: contract,
-            operation: OperationType.Call,
             data: calldata,
             value: "0",
     }
@@ -70,11 +69,10 @@ function createNrAdapterRedeemTxn(
     contract: string,
     conditionId: string,
     redeemAmounts: bigint[],
-): SafeTransaction {
+): Transaction {
     const calldata = encodeFunctionData({...nrAdapter, args: [conditionId, redeemAmounts]});
     return {
             to: contract,
-            operation: OperationType.Call,
             data: calldata,
             value: "0",
         }

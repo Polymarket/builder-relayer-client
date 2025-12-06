@@ -1,6 +1,6 @@
 import { config as dotenvConfig } from "dotenv";
 import { resolve } from "path";
-import { RelayClient, Transaction } from "../src";
+import { RelayClient, RelayerTxType, Transaction } from "../src";
 import { encodeFunctionData, prepareEncodeFunctionData, createWalletClient, Hex, http, maxUint256 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { polygon } from "viem/chains";
@@ -54,7 +54,8 @@ async function main() {
     const builderConfig = new BuilderConfig({
         localBuilderCreds: builderCreds
     });
-    const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+    // Set RelayerTxType to PROXY to create Proxy Transactions
+    const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig, RelayerTxType.PROXY);
 
     const usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
     const ctf = "0x4d97dcd97ec945f40cf65f87097ace5ea0476045";
