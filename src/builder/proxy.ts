@@ -129,6 +129,5 @@ async function getGasLimit(signer: IAbstractSigner, to: string, args: ProxyTrans
         console.log("Error estimating gas for proxy transaction, using default gas limit:", e);
         gasLimitBigInt = DEFAULT_GAS_LIMIT;
     }
-    const gasLimitStr = gasLimitBigInt.toString();
-    return gasLimitStr
+    return gasLimitBigInt.toString();
 }

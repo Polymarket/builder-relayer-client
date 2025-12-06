@@ -1,4 +1,4 @@
-import { keccak256, getCreate2Address,encodePacked, Hex, encodeAbiParameters } from 'viem'
+import { keccak256, getCreate2Address, encodePacked, Hex, encodeAbiParameters } from 'viem'
 import { SAFE_INIT_CODE_HASH, PROXY_INIT_CODE_HASH } from "../constants";
 
 export const deriveProxyWallet = (address: string, proxyFactory: string): string => {
