@@ -10,6 +10,8 @@ import {
 import { deriveProxyWallet } from "./derive";
 import { ProxyContractConfig } from "../config";
 
+const DEFAULT_GAS_LIMIT = BigInt(10_000_000);
+
 function createStructHash(
     from: string,
     to: string,
@@ -65,13 +67,8 @@ export async function buildProxyTransactionRequest(
     const proxy = deriveProxyWallet(args.from, proxyWalletFactory);
     const relayerFee = "0";
     const relayHub = proxyContractConfig.RelayHub;
-    const gasLimit = args.gasLimit ? args.gasLimit: await signer.estimateGas({
-            from: args.from,
-            to: to,
-            data: args.data,
-        }
-    );
-    const gasLimitStr = gasLimit.toString();
+    const gasLimitStr = await getGasLimit(signer, to, args);
+
     const sigParams: SignatureParams = {
         gasPrice: args.gasPrice,
         gasLimit: gasLimitStr,
@@ -113,4 +110,25 @@ export async function buildProxyTransactionRequest(
     console.log(`Created Proxy Transaction Request:`);
     console.log(req);
     return req;
+}
+
+async function getGasLimit(signer: IAbstractSigner, to: string, args: ProxyTransactionArgs): Promise<string> {
+    if (args.gasLimit && args.gasLimit !== "0") {
+        return args.gasLimit;
+    }
+
+    let gasLimitBigInt: bigint;
+    try {
+        gasLimitBigInt = await signer.estimateGas({
+            from: args.from,
+            to: to,
+            data: args.data,
+        }
+        );
+    }  catch (e) {
+        console.log("Error estimating gas for proxy transaction, using default gas limit:", e);
+        gasLimitBigInt = DEFAULT_GAS_LIMIT;
+    }
+    const gasLimitStr = gasLimitBigInt.toString();
+    return gasLimitStr
 }

@@ -36,6 +36,17 @@ const POL: ContractConfig = {
     }
 };
 
+export function isProxyContractConfigValid(
+    config: ProxyContractConfig
+): boolean {
+    return !!config.RelayHub && !!config.ProxyFactory;
+}
+
+export function isSafeContractConfigValid(
+    config: SafeContractConfig
+): boolean {
+    return !!config.SafeFactory && !!config.SafeMultisend;
+}
 
 export const getContractConfig = (chainId: number): ContractConfig => {
     switch (chainId) {

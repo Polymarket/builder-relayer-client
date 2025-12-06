@@ -41,9 +41,9 @@ import {
 } from "./builder";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
-import { ContractConfig, getContractConfig } from "./config";
+import { ContractConfig, getContractConfig, isProxyContractConfigValid, isSafeContractConfigValid } from "./config";
 import { BuilderConfig, BuilderHeaderPayload } from "@polymarket/builder-signing-sdk";
-import { SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
+import { CONFIG_UNSUPPORTED_ON_CHAIN, SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
 import { encodeProxyTransactionData } from "./encode";
 
 
@@ -123,6 +123,11 @@ export class RelayClient {
      */
     public async execute(txns: Transaction[], metadata?: string): Promise<RelayerTransactionResponse> {
         this.signerNeeded();
+        
+        if (txns.length == 0) {
+            throw new Error("no transactions to execute");
+        }
+
         switch (this.relayTxType) {
             case RelayerTxType.SAFE:
                 return this.executeSafeTransactions(
@@ -149,7 +154,7 @@ export class RelayClient {
         }
     }
 
-    public async executeProxyTransactions(txns: ProxyTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
+    private async executeProxyTransactions(txns: ProxyTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
         this.signerNeeded();
         console.log(`Executing proxy transactions...`);
         const start = Date.now();
@@ -163,6 +168,10 @@ export class RelayClient {
             nonce: rp.nonce,
         }
         const proxyContractConfig = this.contractConfig.ProxyContracts;
+        if (!isProxyContractConfigValid(proxyContractConfig)) {
+            throw CONFIG_UNSUPPORTED_ON_CHAIN;
+        }
+
         const request = await buildProxyTransactionRequest(this.signer!, args, proxyContractConfig, metadata);
         console.log(`Client side proxy request creation took: ${(Date.now() - start) / 1000} seconds`);
         
@@ -177,13 +186,7 @@ export class RelayClient {
         );
     }
 
-    /**
-     * Executes a batch of safe transactions
-     * @param txns 
-     * @param metadata 
-     * @returns 
-     */
-    public async executeSafeTransactions(txns: SafeTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
+    private async executeSafeTransactions(txns: SafeTransaction[], metadata?: string): Promise<RelayerTransactionResponse> {
         this.signerNeeded();
         console.log(`Executing safe transactions...`);
         const safe = await this.getExpectedSafe();
@@ -206,6 +209,9 @@ export class RelayClient {
         }
 
         const safeContractConfig = this.contractConfig.SafeContracts;
+        if (!isSafeContractConfigValid(safeContractConfig)) {
+            throw CONFIG_UNSUPPORTED_ON_CHAIN;
+        }
 
         const request = await buildSafeTransactionRequest(
             this.signer as IAbstractSigner,
