@@ -34,6 +34,33 @@ const client = new RelayClient(relayerUrl, chainId, wallet);
 // Or initialize with PROXY transaction type
 const proxyClient = new RelayClient(relayerUrl, chainId, wallet, undefined, RelayerTxType.PROXY);
 ```
+> The Relayer base URL you use should match the environment from the
+> official builder docs (for example, the public production URL vs any
+> sandbox you have been given).[web:88]
+
+When you are using the builder signing server to obtain headers, you
+can forward them directly into the Relayer client:
+
+const builderHeaders = await fetch("http://localhost:3000/sign", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+method: "POST",
+path: "/orders",
+body: JSON.stringify(order),
+}),
+}).then((r) => r.json());
+
+const client = new RelayerClient({
+baseUrl: process.env.POLYMARKET_RELAYER_URL!,
+headers: {
+"x-builder-signature": builderHeaders.signature,
+"x-builder-address": builderHeaders.address,
+},
+});
+
+This makes it explicit how to plug builder headers from the signing
+server into the Relayer client and which URL to point at.
 
 ### Transaction Types
 
