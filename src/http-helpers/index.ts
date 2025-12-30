@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestHeaders, AxiosResponse } from "axios";
+import axios, { AxiosInstance, RawAxiosRequestHeaders, AxiosResponse } from "axios";
 
 export const GET = "GET";
 export const POST = "POST";
@@ -9,7 +9,7 @@ export const PUT = "PUT";
 export type QueryParams = Record<string, any>;
 
 export interface RequestOptions {
-    headers?: AxiosRequestHeaders;
+    headers?: RawAxiosRequestHeaders;
     data?: any;
     params?: QueryParams;
 }
