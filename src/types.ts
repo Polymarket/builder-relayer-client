@@ -136,8 +136,8 @@ export interface RelayerTransaction {
     state: string;
     type: string;
     metadata: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 
 
