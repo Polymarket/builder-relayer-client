@@ -5,7 +5,7 @@ TypeScript client library for interacting with Polymarket relayer infrastructure
 ## Installation
 
 ```bash
-pnpm install @polymarket/builder-relayer-client
+pnpm install @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
 ## Quick Start

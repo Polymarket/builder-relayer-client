@@ -12,7 +12,7 @@ importers:
         specifier: 0.0.1
         version: 0.0.1
       '@polymarket/builder-signing-sdk':
-        specifier: ^0.0.8
+        specifier: '>=0.0.8'
         version: 0.0.8
       axios:
         specifier: ^0.27.2
