@@ -39,10 +39,12 @@ const proxyClient = new RelayClient(relayerUrl, chainId, wallet, undefined, Rela
 
 The client supports two transaction types via the `RelayerTxType` enum:
 
-- **`RelayerTxType.SAFE`** (default): Executes transactions through for a Gnosis Safe
+- **`RelayerTxType.SAFE`** (default): Executes transactions through a Gnosis Safe
 - **`RelayerTxType.PROXY`**: Executes transactions for a Polymarket Proxy wallet
 
 The transaction type is specified as the last parameter when creating a `RelayClient` instance. All examples use the `Transaction` type - the client automatically converts transactions to the appropriate format (`SafeTransaction` or `ProxyTransaction`) based on the `RelayerTxType` you've configured.
+
+The client also supports **Deposit Wallets**, which use separate dedicated methods rather than the `execute()` flow. See [Deposit Wallet](#deposit-wallet) below.
 
 ### With Local Builder Authentication
 
@@ -307,4 +309,111 @@ console.log("Safe redeem completed:", safeResult.transactionHash);
 const proxyResponse = await proxyClient.execute([redeemTx], "redeem positions");
 const proxyResult = await proxyResponse.wait();
 console.log("Proxy redeem completed:", proxyResult.transactionHash);
+```
+
+### Deposit Wallet
+
+Deposit Wallets are UUPS-upgradeable smart contract wallets that support EIP-712 signed batch execution. Unlike Safe and Proxy wallets which use the `execute()` method, Deposit Wallets have dedicated methods.
+
+#### Derive Deposit Wallet Address
+
+You can predict the deposit wallet address before deployment using CREATE2:
+
+```typescript
+const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+
+const walletAddress = await client.deriveDepositWalletAddress();
+console.log("Expected deposit wallet address:", walletAddress);
+```
+
+Or use the standalone function directly:
+
+```typescript
+import { deriveDepositWallet } from "@polymarket/builder-relayer-client";
+
+const walletAddress = deriveDepositWallet(ownerAddress, factoryAddress, implementationAddress);
+```
+
+#### Deploy Deposit Wallet
+
+```typescript
+const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+
+const response = await client.deployDepositWallet();
+const result = await response.wait();
+
+if (result) {
+  console.log("Deposit wallet deployed successfully!");
+  console.log("Transaction Hash:", result.transactionHash);
+} else {
+  console.log("Deposit wallet deployment failed");
+}
+```
+
+#### Execute Deposit Wallet Batch
+
+Deposit wallet transactions use `DepositWalletCall` instead of `Transaction`. Each call has a `target` (instead of `to`), `value`, and `data` field. Batches require a `walletAddress` and a `deadline` (unix timestamp for signature expiry).
+
+```typescript
+import { encodeFunctionData, prepareEncodeFunctionData, maxUint256 } from "viem";
+import { DepositWalletCall } from "@polymarket/builder-relayer-client";
+
+const erc20Abi = [
+  {
+    "constant": false,
+    "inputs": [
+      {"name": "_spender", "type": "address"},
+      {"name": "_value", "type": "uint256"}
+    ],
+    "name": "approve",
+    "outputs": [{"name": "", "type": "bool"}],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+const erc20 = prepareEncodeFunctionData({
+  abi: erc20Abi,
+  functionName: "approve",
+});
+
+function createApproveCall(
+  tokenAddress: string,
+  spenderAddress: string
+): DepositWalletCall {
+  const calldata = encodeFunctionData({
+    ...erc20,
+    args: [spenderAddress, maxUint256]
+  });
+  return {
+    target: tokenAddress,
+    value: "0",
+    data: calldata,
+  };
+}
+
+const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
+
+const walletAddress = await client.deriveDepositWalletAddress();
+
+const approveCall = createApproveCall(
+  "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC
+  "0x4d97dcd97ec945f40cf65f87097ace5ea0476045"  // CTF
+);
+
+// Deadline: 4 minutes from now
+const deadline = Math.floor(Date.now() / 1000 + 240).toString();
+
+const response = await client.executeDepositWalletBatch([approveCall], walletAddress, deadline);
+const result = await response.wait();
+console.log("Deposit wallet batch executed:", result.transactionHash);
+```
+
+#### Check Deposit Wallet Deployment
+
+```typescript
+const walletAddress = await client.deriveDepositWalletAddress();
+const isDeployed = await client.getDeployed(walletAddress, "WALLET");
+console.log("Deposit wallet deployed:", isDeployed);
 ```

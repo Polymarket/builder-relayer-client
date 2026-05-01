@@ -8,9 +8,15 @@ export interface SafeContractConfig {
     SafeMultisend: string;
 }
 
+export interface DepositWalletContractConfig {
+    DepositWalletFactory: string;
+    DepositWalletImplementation: string;
+}
+
 export interface ContractConfig {
     ProxyContracts: ProxyContractConfig;
     SafeContracts: SafeContractConfig;
+    DepositWalletContracts: DepositWalletContractConfig;
 };
 
 const AMOY: ContractConfig = {
@@ -22,7 +28,11 @@ const AMOY: ContractConfig = {
     SafeContracts: {
         SafeFactory: "0xaacFeEa03eb1561C4e67d661e40682Bd20E3541b",
         SafeMultisend: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
-    }
+    },
+    DepositWalletContracts: {
+        DepositWalletFactory: "0x00000000000Fb5C9ADea0298D729A0CB3823Cc07",
+        DepositWalletImplementation: "0x50a88fE9a441cB4c9c2aD6A2207CE2795C7D7Fbd",
+    },
 };
 
 const POL: ContractConfig = {
@@ -33,7 +43,11 @@ const POL: ContractConfig = {
     SafeContracts: {
         SafeFactory: "0xaacFeEa03eb1561C4e67d661e40682Bd20E3541b",
         SafeMultisend: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
-    }
+    },
+    DepositWalletContracts: {
+        DepositWalletFactory: "0x00000000000Fb5C9ADea0298D729A0CB3823Cc07",
+        DepositWalletImplementation: "0x58CA52ebe0DadfdF531Cde7062e76746de4Db1eB",
+    },
 };
 
 export function isProxyContractConfigValid(
@@ -46,6 +60,12 @@ export function isSafeContractConfigValid(
     config: SafeContractConfig
 ): boolean {
     return !!config.SafeFactory && !!config.SafeMultisend;
+}
+
+export function isDepositWalletContractConfigValid(
+    config: DepositWalletContractConfig
+): boolean {
+    return !!config.DepositWalletFactory && !!config.DepositWalletImplementation;
 }
 
 export const getContractConfig = (chainId: number): ContractConfig => {

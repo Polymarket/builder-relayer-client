@@ -7,7 +7,9 @@ export enum RelayerTxType {
 export enum TransactionType {
     SAFE = "SAFE",
     PROXY = "PROXY",
-    SAFE_CREATE = "SAFE-CREATE"
+    SAFE_CREATE = "SAFE-CREATE",
+    WALLET = "WALLET",
+    WALLET_CREATE = "WALLET-CREATE",
 }
 
 export interface SignatureParams {
@@ -153,4 +155,42 @@ export interface RelayerTransactionResponse {
 
 export interface GetDeployedResponse {
     deployed: boolean;
+}
+
+// Deposit Wallet types
+
+export interface DepositWalletCall {
+    target: string;
+    value: string;
+    data: string;
+}
+
+export interface DepositWalletTransactionArgs {
+    from: string;
+    chainId: number;
+    walletAddress: string;
+    nonce: string;
+    deadline: string;
+    calls: DepositWalletCall[];
+}
+
+export interface DepositWalletParams {
+    depositWallet: string;
+    deadline: string;
+    calls: DepositWalletCall[];
+}
+
+export interface DepositWalletBatchRequest {
+    type: string;
+    from: string;
+    to: string;
+    nonce: string;
+    signature: string;
+    depositWalletParams: DepositWalletParams;
+}
+
+export interface DepositWalletCreateRequest {
+    type: string;
+    from: string;
+    to: string;
 }

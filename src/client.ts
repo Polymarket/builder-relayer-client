@@ -8,8 +8,10 @@ import {
     HttpClient,
     RequestOptions,
 } from "./http-helpers";
-import { 
+import {
     CallType,
+    DepositWalletCall,
+    DepositWalletTransactionArgs,
     GetDeployedResponse,
     NoncePayload,
     OperationType,
@@ -33,15 +35,18 @@ import {
     GET_TRANSACTIONS,
     SUBMIT_TRANSACTION,
 } from "./endpoints";
-import { 
+import {
     buildSafeTransactionRequest,
     buildSafeCreateTransactionRequest,
     buildProxyTransactionRequest,
+    buildDepositWalletBatchRequest,
+    buildDepositWalletCreateRequest,
     deriveSafe,
+    deriveDepositWallet,
 } from "./builder";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
-import { ContractConfig, getContractConfig, isProxyContractConfigValid, isSafeContractConfigValid } from "./config";
+import { ContractConfig, getContractConfig, isProxyContractConfigValid, isSafeContractConfigValid, isDepositWalletContractConfigValid } from "./config";
 import { BuilderConfig, BuilderHeaderPayload } from "@polymarket/builder-signing-sdk";
 import { CONFIG_UNSUPPORTED_ON_CHAIN, SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
 import { encodeProxyTransactionData } from "./encode";
@@ -282,13 +287,101 @@ export class RelayClient {
         );
     }
 
-    public async getDeployed(safe: string): Promise<boolean> {        
+    public async getDeployed(address: string, type?: string): Promise<boolean> {
+        const params: Record<string, string> = { address };
+        if (type !== undefined) {
+            params.type = type;
+        }
         const resp: GetDeployedResponse = await this.send(
             `${GET_DEPLOYED}`,
             GET,
-            {params: { address: safe }},
+            {params},
         );
         return resp.deployed;
+    }
+
+    /**
+     * Deploys a new deposit wallet
+     * @returns
+     */
+    public async deployDepositWallet(): Promise<RelayerTransactionResponse> {
+        this.signerNeeded();
+        const from = await (this.signer as IAbstractSigner).getAddress();
+
+        const depositWalletConfig = this.contractConfig.DepositWalletContracts;
+        if (!isDepositWalletContractConfigValid(depositWalletConfig)) {
+            throw CONFIG_UNSUPPORTED_ON_CHAIN;
+        }
+
+        const request = buildDepositWalletCreateRequest(from, depositWalletConfig);
+        const requestPayload = JSON.stringify(request);
+
+        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload);
+        return new ClientRelayerTransactionResponse(
+            resp.transactionID,
+            resp.state,
+            resp.transactionHash,
+            this,
+        );
+    }
+
+    /**
+     * Executes a batch of calls on a deposit wallet
+     * @param calls - Array of calls to execute
+     * @param walletAddress - Address of the deposit wallet
+     * @param deadline - Unix timestamp deadline for the batch signature
+     * @returns
+     */
+    public async executeDepositWalletBatch(
+        calls: DepositWalletCall[],
+        walletAddress: string,
+        deadline: string,
+    ): Promise<RelayerTransactionResponse> {
+        this.signerNeeded();
+        const from = await (this.signer as IAbstractSigner).getAddress();
+
+        const depositWalletConfig = this.contractConfig.DepositWalletContracts;
+        if (!isDepositWalletContractConfigValid(depositWalletConfig)) {
+            throw CONFIG_UNSUPPORTED_ON_CHAIN;
+        }
+
+        const noncePayload = await this.getNonce(from, TransactionType.WALLET);
+
+        const args: DepositWalletTransactionArgs = {
+            from,
+            chainId: this.chainId,
+            walletAddress,
+            nonce: noncePayload.nonce,
+            deadline,
+            calls,
+        };
+
+        const request = await buildDepositWalletBatchRequest(
+            this.signer as IAbstractSigner,
+            args,
+            depositWalletConfig,
+        );
+
+        const requestPayload = JSON.stringify(request);
+
+        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload);
+        return new ClientRelayerTransactionResponse(
+            resp.transactionID,
+            resp.state,
+            resp.transactionHash,
+            this,
+        );
+    }
+
+    /**
+     * Derives the expected deposit wallet address for the current signer
+     * @returns The predicted deposit wallet address
+     */
+    public async deriveDepositWalletAddress(): Promise<string> {
+        this.signerNeeded();
+        const address = await (this.signer as IAbstractSigner).getAddress();
+        const config = this.contractConfig.DepositWalletContracts;
+        return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
     }
 
     /**
@@ -296,12 +389,12 @@ export class RelayClient {
      * Returns the relayer transaction if it does each the desired state
      * Returns undefined if the transaction hits the failed state
      * Times out after maxPolls is reached
-     * @param transactionId 
-     * @param states 
+     * @param transactionId
+     * @param states
      * @param failState
-     * @param maxPolls 
-     * @param pollFrequency 
-     * @returns 
+     * @param maxPolls
+     * @param pollFrequency
+     * @returns
      */
     public async pollUntilState(transactionId: string, states: string[], failState?: string, maxPolls?: number, pollFrequency?: number): Promise<RelayerTransaction | undefined> {
         console.log(`Waiting for transaction ${transactionId} matching states: ${states}...`)
