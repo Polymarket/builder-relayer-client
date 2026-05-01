@@ -379,8 +379,11 @@ export class RelayClient {
      */
     public async deriveDepositWalletAddress(): Promise<string> {
         this.signerNeeded();
-        const address = await (this.signer as IAbstractSigner).getAddress();
         const config = this.contractConfig.DepositWalletContracts;
+        if (!isDepositWalletContractConfigValid(config)) {
+            throw CONFIG_UNSUPPORTED_ON_CHAIN;
+        }
+        const address = await (this.signer as IAbstractSigner).getAddress();
         return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
     }
 
