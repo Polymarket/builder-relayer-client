@@ -1,6 +1,7 @@
-import { Wallet } from "@ethersproject/wallet";
-import { JsonRpcSigner } from "@ethersproject/providers";
+import { Wallet, providers } from "ethers";
 import { WalletClient, zeroAddress } from "viem";
+
+type JsonRpcSigner = InstanceType<typeof providers.JsonRpcSigner>;
 import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import {
     GET,
