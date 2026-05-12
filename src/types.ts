@@ -157,6 +157,16 @@ export interface GetDeployedResponse {
     deployed: boolean;
 }
 
+// Auth: simple API-key header path (per
+// https://docs.polymarket.com/trading/gasless). Alternative to HMAC
+// `BuilderConfig` — pass an instance of these to the `RelayClient` constructor
+// to authenticate via `RELAYER_API_KEY` + `RELAYER_API_KEY_ADDRESS` headers.
+// Obtained from polymarket.com Settings > API Keys.
+export interface RelayerApiKeyCreds {
+    apiKey: string;
+    apiKeyAddress: string;
+}
+
 // Deposit Wallet types
 
 export interface DepositWalletCall {

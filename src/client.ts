@@ -17,6 +17,7 @@ import {
     OperationType,
     ProxyTransaction,
     ProxyTransactionArgs,
+    RelayerApiKeyCreds,
     RelayerTransaction,
     RelayerTransactionResponse,
     RelayerTxType,
@@ -67,12 +68,15 @@ export class RelayClient {
 
     readonly builderConfig?: BuilderConfig;
 
+    readonly apiKeyCreds?: RelayerApiKeyCreds;
+
     constructor(
         relayerUrl: string,
         chainId: number,
         signer?: Wallet | JsonRpcSigner | WalletClient,
         builderConfig?: BuilderConfig,
         relayTxType?: RelayerTxType,
+        apiKeyCreds?: RelayerApiKeyCreds,
     ) {
         this.relayerUrl = relayerUrl.endsWith("/") ? relayerUrl.slice(0, -1) : relayerUrl;
         this.chainId = chainId;
@@ -82,13 +86,17 @@ export class RelayClient {
         this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
-        
+
         if (signer != undefined) {
             this.signer = createAbstractSigner(chainId, signer);
         }
 
         if (builderConfig !== undefined) {
             this.builderConfig = builderConfig;
+        }
+
+        if (apiKeyCreds !== undefined) {
+            this.apiKeyCreds = apiKeyCreds;
         }
     }
 
@@ -431,16 +439,35 @@ export class RelayClient {
         method: string,
         path: string,
         body?: string
-    ): Promise<any> {        
+    ): Promise<any> {
+        // API-key auth (preferred when configured) — see
+        // https://docs.polymarket.com/trading/gasless. Empirically required
+        // for CTF `mergePositions` on post-V2-cutover SAFEs: HMAC builder
+        // auth round-trips into STATE_FAILED at gas estimation, while the
+        // API-key path is accepted by the relayer.
+        if (this.canApiKeyAuth()) {
+            return this.send(
+                path,
+                method,
+                {
+                    headers: {
+                        RELAYER_API_KEY: this.apiKeyCreds!.apiKey,
+                        RELAYER_API_KEY_ADDRESS: this.apiKeyCreds!.apiKeyAddress,
+                    },
+                    data: body,
+                }
+            );
+        }
+
         // builders auth
         if (this.canBuilderAuth()) {
             const builderHeaders = await this._generateBuilderHeaders(method, path, body);
             if (builderHeaders !== undefined) {
                 return this.send(
                     path,
-                    method, 
+                    method,
                     { headers: builderHeaders, data: body }
-                );    
+                );
             }
         }
 
@@ -473,6 +500,14 @@ export class RelayClient {
 
     private canBuilderAuth(): boolean {
         return (this.builderConfig != undefined && this.builderConfig.isValid());
+    }
+
+    private canApiKeyAuth(): boolean {
+        return (
+            this.apiKeyCreds != undefined
+            && !!this.apiKeyCreds.apiKey
+            && !!this.apiKeyCreds.apiKeyAddress
+        );
     }
 
     private async send(

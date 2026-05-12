@@ -91,6 +91,24 @@ const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
 const proxyClient = new RelayClient(relayerUrl, chainId, wallet, builderConfig, RelayerTxType.PROXY);
 ```
 
+### With Relayer API-Key Authentication
+
+The simplest auth path — uses the `RELAYER_API_KEY` + `RELAYER_API_KEY_ADDRESS` HTTP headers documented at [docs.polymarket.com/trading/gasless](https://docs.polymarket.com/trading/gasless). Obtain the key from polymarket.com's Settings > API Keys; the address is the EOA that owns the key.
+
+```typescript
+import { RelayClient, RelayerTxType } from "@polymarket/builder-relayer-client";
+
+const apiKeyCreds = {
+  apiKey: process.env.RELAYER_API_KEY!,
+  apiKeyAddress: process.env.RELAYER_API_KEY_ADDRESS!,
+};
+
+// Pass `apiKeyCreds` as the 6th constructor argument. The 4th (`builderConfig`)
+// can stay `undefined` — when `apiKeyCreds` is set it takes precedence over
+// any HMAC `BuilderConfig` for authenticated requests.
+const client = new RelayClient(relayerUrl, chainId, wallet, undefined, RelayerTxType.SAFE, apiKeyCreds);
+```
+
 ## Examples
 
 ### Execute ERC20 Approval Transaction
