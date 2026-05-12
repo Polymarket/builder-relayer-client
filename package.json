@@ -13,6 +13,8 @@
         "test": "make test"
     },
     "devDependencies": {
+        "@ethersproject/providers": "5.8.0",
+        "@ethersproject/wallet": "5.8.0",
         "@types/chai": "5.2.2",
         "@types/mocha": "10.0.10",
         "@types/node": "^18.7.18",
