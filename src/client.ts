@@ -1,6 +1,6 @@
 import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcSigner } from "@ethersproject/providers";
-import { WalletClient, zeroAddress } from "viem";
+import { Address, PublicClient, WalletClient, zeroAddress } from "viem";
 import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import {
     GET,
@@ -43,6 +43,10 @@ import {
     buildDepositWalletCreateRequest,
     deriveSafe,
     deriveDepositWallet,
+    getBeaconSlotAddress,
+    getImplementationSlotAddress,
+    isBeaconProxy,
+    isUUPSProxy,
 } from "./builder";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
@@ -385,6 +389,48 @@ export class RelayClient {
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
         return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+    }
+
+    /**
+     * Returns the address stored in the wallet's ERC-1967 implementation slot,
+     * or the zero address if the slot is empty.
+     */
+    public async getImplementationSlotAddress(walletAddress: string): Promise<Address> {
+        return getImplementationSlotAddress(this.requirePublicClient(), walletAddress);
+    }
+
+    /**
+     * Returns the address stored in the wallet's ERC-1967 beacon slot,
+     * or the zero address if the slot is empty.
+     */
+    public async getBeaconSlotAddress(walletAddress: string): Promise<Address> {
+        return getBeaconSlotAddress(this.requirePublicClient(), walletAddress);
+    }
+
+    /**
+     * Returns true iff the wallet's ERC-1967 beacon slot points at a non-zero address.
+     */
+    public async isBeaconProxy(walletAddress: string): Promise<boolean> {
+        return isBeaconProxy(this.requirePublicClient(), walletAddress);
+    }
+
+    /**
+     * Returns true iff the wallet's ERC-1967 implementation slot points at a non-zero address.
+     * Legacy UUPS deposit wallets migrated via BeaconForwarder still satisfy this check.
+     */
+    public async isUUPSProxy(walletAddress: string): Promise<boolean> {
+        return isUUPSProxy(this.requirePublicClient(), walletAddress);
+    }
+
+    private requirePublicClient(): PublicClient {
+        this.signerNeeded();
+        const publicClient = (this.signer as unknown as { publicClient?: PublicClient }).publicClient;
+        if (!publicClient) {
+            throw new Error(
+                "publicClient unavailable: storage-slot reads require a viem WalletClient-backed signer",
+            );
+        }
+        return publicClient;
     }
 
     /**
