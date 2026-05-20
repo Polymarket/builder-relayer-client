@@ -28,7 +28,7 @@ export const ERC1967_IMPLEMENTATION_SLOT: Hex =
  * Set on beacon proxies; unused (zero) on UUPS proxies.
  */
 export const ERC1967_BEACON_SLOT: Hex =
-    "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6c1e3c2cfbdf4346";
+    "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50";
 
 export const deriveProxyWallet = (address: string, proxyFactory: string): string => {
     return getCreate2Address({
