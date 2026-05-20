@@ -44,7 +44,9 @@ import {
     deriveSafe,
     deriveDepositWallet,
     getBeaconSlotAddress,
+    getFactoryBeacon,
     getImplementationSlotAddress,
+    isBeaconFactory,
     isBeaconProxy,
     isUUPSProxy,
 } from "./builder";
@@ -420,6 +422,24 @@ export class RelayClient {
      */
     public async isUUPSProxy(walletAddress: string): Promise<boolean> {
         return isUUPSProxy(this.requirePublicClient(), walletAddress);
+    }
+
+    /**
+     * Returns the beacon address advertised by the factory's `BEACON()` getter,
+     * or the zero address if the factory does not expose it (legacy
+     * UUPS-deploying factory, or no code at the address).
+     */
+    public async getFactoryBeacon(factoryAddress: string): Promise<Address> {
+        return getFactoryBeacon(this.requirePublicClient(), factoryAddress);
+    }
+
+    /**
+     * Returns true iff the factory exposes `BEACON()` with a non-zero return —
+     * i.e. it is a post-migration, beacon-proxy-deploying factory rather than
+     * the legacy UUPS-proxy-deploying factory.
+     */
+    public async isBeaconFactory(factoryAddress: string): Promise<boolean> {
+        return isBeaconFactory(this.requirePublicClient(), factoryAddress);
     }
 
     private requirePublicClient(): PublicClient {

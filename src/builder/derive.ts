@@ -217,3 +217,51 @@ export const isUUPSProxy = async (
     const impl = await getImplementationSlotAddress(client, walletAddress);
     return impl !== zeroAddress;
 };
+
+/**
+ * Selector for `BEACON()` — the public getter of the immutable `BEACON`
+ * variable on the post-migration DepositWalletFactory. The legacy
+ * UUPS-deploying factory has no such function; calling this selector on
+ * it reverts (via the UUPS fallback into an impl that doesn't recognize
+ * the selector).
+ */
+const FACTORY_BEACON_SELECTOR: Hex = "0x49493a4d";
+
+/**
+ * Low-level: returns the beacon address advertised by the factory's
+ * `BEACON()` getter, or the zero address if the factory does not implement
+ * that getter (i.e. it is the legacy UUPS-deploying factory, or the address
+ * has no code at all).
+ *
+ * Answers the structural question "does this factory expose the
+ * beacon-factory ABI?" — it does not validate that the returned beacon is
+ * a real Solady UpgradeableBeacon.
+ */
+export const getFactoryBeacon = async (
+    client: PublicClient,
+    factoryAddress: string,
+): Promise<Address> => {
+    try {
+        const { data } = await client.call({
+            to: factoryAddress as Address,
+            data: FACTORY_BEACON_SELECTOR,
+        });
+        // Need 32 bytes of returndata (0x + 64 hex chars) to decode an address.
+        if (!data || data.length < 66) return zeroAddress;
+        return getAddress("0x" + data.slice(-40));
+    } catch {
+        return zeroAddress;
+    }
+};
+
+/**
+ * Low-level: true iff the factory exposes `BEACON()` and returns a non-zero
+ * address — i.e. it is a post-migration, beacon-proxy-deploying factory.
+ */
+export const isBeaconFactory = async (
+    client: PublicClient,
+    factoryAddress: string,
+): Promise<boolean> => {
+    const beacon = await getFactoryBeacon(client, factoryAddress);
+    return beacon !== zeroAddress;
+};
