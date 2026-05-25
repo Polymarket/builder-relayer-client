@@ -54,9 +54,8 @@ import {
     buildDepositWalletBatchRequest,
     buildDepositWalletCreateRequest,
     deriveSafe,
-    deriveDepositWallet,
 } from "./builder";
-import { deriveBeaconDepositWallet } from "./builder/derive";
+import { deriveBeaconDepositWallet, deriveUupsDepositWallet } from "./builder/derive";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
 import { ContractConfig, getContractConfig, isProxyContractConfigValid, isSafeContractConfigValid, isDepositWalletContractConfigValid } from "./config";
@@ -432,7 +431,7 @@ export class RelayClient {
             throw CONFIG_UNSUPPORTED_ON_CHAIN;
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
-        const legacyAddress = deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+        const legacyAddress = deriveUupsDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
         const beacon = await this.getDepositWalletFactoryBeacon(config.DepositWalletFactory);
         if (beacon.toLowerCase() === zeroAddress) {
             return legacyAddress;

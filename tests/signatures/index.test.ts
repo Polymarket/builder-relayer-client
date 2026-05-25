@@ -13,9 +13,8 @@ import {
     buildProxyTransactionRequest,
     buildSafeCreateTransactionRequest,
     buildSafeTransactionRequest,
-    deriveDepositWallet,
 } from "../../src/builder";
-import { deriveBeaconDepositWallet } from "../../src/builder/derive";
+import { deriveBeaconDepositWallet, deriveUupsDepositWallet } from "../../src/builder/derive";
 import {
     CallType,
     OperationType,
@@ -171,7 +170,7 @@ describe("setup", () => {
 
     describe("derive deposit wallet address", () => {
         it("derives the legacy UUPS deposit wallet address", () => {
-            const wallet = deriveDepositWallet(
+            const wallet = deriveUupsDepositWallet(
                 "0x0000000000000000000000000000000000000001",
                 contractConfig.DepositWalletContracts.DepositWalletFactory,
                 contractConfig.DepositWalletContracts.DepositWalletImplementation,
@@ -214,7 +213,7 @@ describe("setup", () => {
             };
 
             const wallet = await client.deriveDepositWalletAddress();
-            const expectedWallet = deriveDepositWallet(
+            const expectedWallet = deriveUupsDepositWallet(
                 address,
                 contractConfig.DepositWalletContracts.DepositWalletFactory,
                 contractConfig.DepositWalletContracts.DepositWalletImplementation,
@@ -231,7 +230,7 @@ describe("setup", () => {
             };
 
             const wallet = await client.deriveDepositWalletAddress();
-            const expectedWallet = deriveDepositWallet(
+            const expectedWallet = deriveUupsDepositWallet(
                 address,
                 contractConfig.DepositWalletContracts.DepositWalletFactory,
                 contractConfig.DepositWalletContracts.DepositWalletImplementation,
