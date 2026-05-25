@@ -7,6 +7,7 @@ import {
     ExecutionRevertedError,
     http,
     RawContractError,
+    type Chain,
     type PublicClient,
     WalletClient,
     zeroAddress,
@@ -95,6 +96,10 @@ function isContractRevert(error: unknown): boolean {
     )) !== null;
 }
 
+export interface RelayClientOptions {
+    chain?: Chain;
+}
+
 
 export class RelayClient {
     readonly relayerUrl: string;
@@ -119,6 +124,7 @@ export class RelayClient {
         signer?: Wallet | JsonRpcSigner | WalletClient,
         builderConfig?: BuilderConfig,
         relayTxType?: RelayerTxType,
+        options?: RelayClientOptions,
     ) {
         this.relayerUrl = relayerUrl.endsWith("/") ? relayerUrl.slice(0, -1) : relayerUrl;
         this.chainId = chainId;
@@ -128,8 +134,12 @@ export class RelayClient {
         this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
+        const chain = options?.chain ?? getViemChain(chainId);
+        if (chain.id !== chainId) {
+            throw new Error("chain id does not match chainId");
+        }
         this.publicClient = createPublicClient({
-            chain: getViemChain(chainId),
+            chain,
             transport: http(),
         });
         
