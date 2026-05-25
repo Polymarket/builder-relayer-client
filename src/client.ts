@@ -7,7 +7,6 @@ import {
     ExecutionRevertedError,
     http,
     RawContractError,
-    type Chain,
     type PublicClient,
     WalletClient,
     zeroAddress,
@@ -96,11 +95,6 @@ function isContractRevert(error: unknown): boolean {
     )) !== null;
 }
 
-export interface RelayClientOptions {
-    chain?: Chain;
-}
-
-
 export class RelayClient {
     readonly relayerUrl: string;
 
@@ -112,7 +106,7 @@ export class RelayClient {
 
     readonly httpClient: HttpClient;
 
-    readonly publicClient: PublicClient;
+    private readonly publicClient: PublicClient;
 
     readonly signer?: IAbstractSigner;
 
@@ -124,7 +118,6 @@ export class RelayClient {
         signer?: Wallet | JsonRpcSigner | WalletClient,
         builderConfig?: BuilderConfig,
         relayTxType?: RelayerTxType,
-        options?: RelayClientOptions,
     ) {
         this.relayerUrl = relayerUrl.endsWith("/") ? relayerUrl.slice(0, -1) : relayerUrl;
         this.chainId = chainId;
@@ -134,12 +127,8 @@ export class RelayClient {
         this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
-        const chain = options?.chain ?? getViemChain(chainId);
-        if (chain.id !== chainId) {
-            throw new Error("chain id does not match chainId");
-        }
         this.publicClient = createPublicClient({
-            chain,
+            chain: getViemChain(chainId),
             transport: http(),
         });
         
@@ -444,11 +433,20 @@ export class RelayClient {
             throw CONFIG_UNSUPPORTED_ON_CHAIN;
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
+        const legacyAddress = deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
         const beacon = await this.getDepositWalletFactoryBeacon(config.DepositWalletFactory);
-        if (beacon.toLowerCase() !== zeroAddress) {
-            return deriveBeaconDepositWallet(address, config.DepositWalletFactory, beacon);
+        if (beacon.toLowerCase() === zeroAddress) {
+            return legacyAddress;
         }
-        return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+        if (await this.isContractDeployed(legacyAddress)) {
+            return legacyAddress;
+        }
+        return deriveBeaconDepositWallet(address, config.DepositWalletFactory, beacon);
+    }
+
+    private async isContractDeployed(address: string): Promise<boolean> {
+        const code = await this.publicClient.getCode({ address: address as `0x${string}` });
+        return code !== undefined && code !== "0x";
     }
 
     private async getDepositWalletFactoryBeacon(factory: string): Promise<string> {

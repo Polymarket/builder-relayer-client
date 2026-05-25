@@ -5,7 +5,7 @@ import { Wallet } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 import { createWalletClient, http, WalletClient, zeroAddress } from "viem";
-import { polygon, polygonAmoy } from "viem/chains";
+import { polygon } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { encodeProxyTransactionData } from "../../src/encode";
 import { RelayClient } from "../../src/client";
@@ -192,8 +192,9 @@ describe("setup", () => {
 
         it("uses factory beacon detection for the client expected address", async () => {
             const client = new RelayClient("http://localhost:8080", chainId, ethersWallet);
-            (client as unknown as { publicClient: { call: () => Promise<{ data: string }> } }).publicClient = {
+            (client as unknown as { publicClient: { call: () => Promise<{ data: string }>; getCode: () => Promise<undefined> } }).publicClient = {
                 call: async () => ({ data: `0x000000000000000000000000${depositWalletBeacon.slice(2)}` }),
+                getCode: async () => undefined,
             };
 
             const wallet = await client.deriveDepositWalletAddress();
@@ -222,15 +223,21 @@ describe("setup", () => {
             expect(wallet).equal(expectedWallet);
         });
 
-        it("rejects an options chain that does not match the chain id", () => {
-            expect(() => new RelayClient(
-                "http://localhost:8080",
-                chainId,
-                ethersWallet,
-                undefined,
-                undefined,
-                { chain: polygonAmoy },
-            )).to.throw("chain id does not match chainId");
+        it("returns the legacy UUPS address when it is already deployed", async () => {
+            const client = new RelayClient("http://localhost:8080", chainId, ethersWallet);
+            (client as unknown as { publicClient: { call: () => Promise<{ data: string }>; getCode: () => Promise<string> } }).publicClient = {
+                call: async () => ({ data: `0x000000000000000000000000${depositWalletBeacon.slice(2)}` }),
+                getCode: async () => "0x01",
+            };
+
+            const wallet = await client.deriveDepositWalletAddress();
+            const expectedWallet = deriveDepositWallet(
+                address,
+                contractConfig.DepositWalletContracts.DepositWalletFactory,
+                contractConfig.DepositWalletContracts.DepositWalletImplementation,
+            );
+
+            expect(wallet).equal(expectedWallet);
         });
     });
 });
