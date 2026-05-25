@@ -8,7 +8,13 @@ import { createWalletClient, http, WalletClient, zeroAddress } from "viem";
 import { polygon } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { encodeProxyTransactionData } from "../../src/encode";
-import { buildProxyTransactionRequest, buildSafeCreateTransactionRequest, buildSafeTransactionRequest } from "../../src/builder";
+import {
+    buildProxyTransactionRequest,
+    buildSafeCreateTransactionRequest,
+    buildSafeTransactionRequest,
+    deriveBeaconDepositWallet,
+    deriveDepositWallet,
+} from "../../src/builder";
 import {
     CallType,
     OperationType,
@@ -158,6 +164,28 @@ describe("setup", () => {
             );
             expect(req.signature).equal(expectedSafeCreateTxnSig);
 
+        });
+    });
+
+    describe("derive deposit wallet address", () => {
+        it("derives the legacy UUPS deposit wallet address", () => {
+            const wallet = deriveDepositWallet(
+                "0x0000000000000000000000000000000000000001",
+                contractConfig.DepositWalletContracts.DepositWalletFactory,
+                contractConfig.DepositWalletContracts.DepositWalletImplementation,
+            );
+
+            expect(wallet.toLowerCase()).equal("0x57ffbc34de23124faeb8387fcd689d314e57accd");
+        });
+
+        it("derives the beacon deposit wallet address", () => {
+            const wallet = deriveBeaconDepositWallet(
+                "0x0000000000000000000000000000000000000001",
+                contractConfig.DepositWalletContracts.DepositWalletFactory,
+                contractConfig.DepositWalletContracts.DepositWalletBeacon,
+            );
+
+            expect(wallet.toLowerCase()).equal("0x94bf330955a0b957662feaf878de77bf25f76cd9");
         });
     });
 });

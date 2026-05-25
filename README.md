@@ -313,7 +313,7 @@ console.log("Proxy redeem completed:", proxyResult.transactionHash);
 
 ### Deposit Wallet
 
-Deposit Wallets are UUPS-upgradeable smart contract wallets that support EIP-712 signed batch execution. Unlike Safe and Proxy wallets which use the `execute()` method, Deposit Wallets have dedicated methods.
+Deposit Wallets are smart contract wallets that support EIP-712 signed batch execution. Unlike Safe and Proxy wallets which use the `execute()` method, Deposit Wallets have dedicated methods.
 
 #### Derive Deposit Wallet Address
 
@@ -329,9 +329,9 @@ console.log("Expected deposit wallet address:", walletAddress);
 Or use the standalone function directly:
 
 ```typescript
-import { deriveDepositWallet } from "@polymarket/builder-relayer-client";
+import { deriveBeaconDepositWallet } from "@polymarket/builder-relayer-client";
 
-const walletAddress = deriveDepositWallet(ownerAddress, factoryAddress, implementationAddress);
+const walletAddress = deriveBeaconDepositWallet(ownerAddress, factoryAddress, beaconAddress);
 ```
 
 #### Deploy Deposit Wallet

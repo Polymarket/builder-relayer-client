@@ -42,6 +42,7 @@ import {
     buildDepositWalletBatchRequest,
     buildDepositWalletCreateRequest,
     deriveSafe,
+    deriveBeaconDepositWallet,
     deriveDepositWallet,
 } from "./builder";
 import { sleep } from "./utils";
@@ -384,6 +385,9 @@ export class RelayClient {
             throw CONFIG_UNSUPPORTED_ON_CHAIN;
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
+        if (config.DepositWalletBeacon) {
+            return deriveBeaconDepositWallet(address, config.DepositWalletFactory, config.DepositWalletBeacon);
+        }
         return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
     }
 

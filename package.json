@@ -31,6 +31,8 @@
         "ws": "^8.11.0"
     },
     "dependencies": {
+        "@ethersproject/providers": "5.8.0",
+        "@ethersproject/wallet": "5.8.0",
         "@polymarket/builder-abstract-signer": "0.0.1",
         "@polymarket/builder-signing-sdk": "^0.0.8",
         "axios": "^0.27.2",

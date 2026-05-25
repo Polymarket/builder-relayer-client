@@ -11,6 +11,7 @@ export interface SafeContractConfig {
 export interface DepositWalletContractConfig {
     DepositWalletFactory: string;
     DepositWalletImplementation: string;
+    DepositWalletBeacon: string;
 }
 
 export interface ContractConfig {
@@ -32,6 +33,7 @@ const AMOY: ContractConfig = {
     DepositWalletContracts: {
         DepositWalletFactory: "0x00000000000Fb5C9ADea0298D729A0CB3823Cc07",
         DepositWalletImplementation: "0x50a88fE9a441cB4c9c2aD6A2207CE2795C7D7Fbd",
+        DepositWalletBeacon: "",
     },
 };
 
@@ -47,6 +49,7 @@ const POL: ContractConfig = {
     DepositWalletContracts: {
         DepositWalletFactory: "0x00000000000Fb5C9ADea0298D729A0CB3823Cc07",
         DepositWalletImplementation: "0x58CA52ebe0DadfdF531Cde7062e76746de4Db1eB",
+        DepositWalletBeacon: "0x7A18EDfe055488A3128f01F563e5B479D92ffc3a",
     },
 };
 
@@ -65,7 +68,7 @@ export function isSafeContractConfigValid(
 export function isDepositWalletContractConfigValid(
     config: DepositWalletContractConfig
 ): boolean {
-    return !!config.DepositWalletFactory && !!config.DepositWalletImplementation;
+    return !!config.DepositWalletFactory && (!!config.DepositWalletImplementation || !!config.DepositWalletBeacon);
 }
 
 export const getContractConfig = (chainId: number): ContractConfig => {
