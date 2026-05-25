@@ -431,13 +431,13 @@ export class RelayClient {
             throw CONFIG_UNSUPPORTED_ON_CHAIN;
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
-        const legacyAddress = deriveUupsDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+        const uupsAddress = deriveUupsDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
         const beacon = await this.getDepositWalletFactoryBeacon(config.DepositWalletFactory);
         if (beacon.toLowerCase() === zeroAddress) {
-            return legacyAddress;
+            return uupsAddress;
         }
-        if (await this.isContractDeployed(legacyAddress)) {
-            return legacyAddress;
+        if (await this.isContractDeployed(uupsAddress)) {
+            return uupsAddress;
         }
         return deriveBeaconDepositWallet(address, config.DepositWalletFactory, beacon);
     }

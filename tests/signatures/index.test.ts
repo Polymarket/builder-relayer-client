@@ -169,7 +169,7 @@ describe("setup", () => {
     });
 
     describe("derive deposit wallet address", () => {
-        it("derives the legacy UUPS deposit wallet address", () => {
+        it("derives the UUPS deposit wallet address", () => {
             const wallet = deriveUupsDepositWallet(
                 "0x0000000000000000000000000000000000000001",
                 contractConfig.DepositWalletContracts.DepositWalletFactory,
@@ -206,7 +206,7 @@ describe("setup", () => {
             expect(wallet).equal(expectedWallet);
         });
 
-        it("falls back to the legacy UUPS address when the factory has no beacon", async () => {
+        it("falls back to the UUPS address when the factory has no beacon", async () => {
             const client = new RelayClient("http://localhost:8080", chainId, ethersWallet);
             (client as unknown as { publicClient: { call: () => Promise<{ data: string }> } }).publicClient = {
                 call: async () => ({ data: `0x000000000000000000000000${zeroAddress.slice(2)}` }),
@@ -222,7 +222,7 @@ describe("setup", () => {
             expect(wallet).equal(expectedWallet);
         });
 
-        it("returns the legacy UUPS address when it is already deployed", async () => {
+        it("returns the UUPS address when it is already deployed", async () => {
             const client = new RelayClient("http://localhost:8080", chainId, ethersWallet);
             (client as unknown as { publicClient: { call: () => Promise<{ data: string }>; getCode: () => Promise<string> } }).publicClient = {
                 call: async () => ({ data: `0x000000000000000000000000${depositWalletBeacon.slice(2)}` }),

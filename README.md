@@ -326,7 +326,7 @@ const walletAddress = await client.deriveDepositWalletAddress();
 console.log("Expected deposit wallet address:", walletAddress);
 ```
 
-The standalone `deriveDepositWallet()` helper only derives legacy UUPS deposit wallet addresses and is deprecated. Prefer `client.deriveDepositWalletAddress()`.
+The standalone `deriveDepositWallet()` helper only derives UUPS deposit wallet addresses and is deprecated. Prefer `client.deriveDepositWalletAddress()`.
 
 #### Deploy Deposit Wallet
 
