@@ -1,6 +1,17 @@
 import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcSigner } from "@ethersproject/providers";
-import { WalletClient, zeroAddress } from "viem";
+import {
+    BaseError,
+    ContractFunctionRevertedError,
+    createPublicClient,
+    ExecutionRevertedError,
+    http,
+    RawContractError,
+    type PublicClient,
+    WalletClient,
+    zeroAddress,
+} from "viem";
+import { polygon, polygonAmoy } from "viem/chains";
 import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import {
     GET,
@@ -52,6 +63,38 @@ import { BuilderConfig, BuilderHeaderPayload } from "@polymarket/builder-signing
 import { CONFIG_UNSUPPORTED_ON_CHAIN, SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
 import { encodeProxyTransactionData } from "./encode";
 
+const FACTORY_BEACON_SELECTOR = "0x49493a4d";
+
+function getViemChain(chainId: number) {
+    switch (chainId) {
+        case 137:
+            return polygon;
+        case 80002:
+            return polygonAmoy;
+        default:
+            throw new Error("Invalid network");
+    }
+}
+
+function decodeAddressReturnData(data?: string): string {
+    if (data === undefined || data.length < 66) {
+        return zeroAddress;
+    }
+    return `0x${data.slice(-40)}`;
+}
+
+function isContractRevert(error: unknown): boolean {
+    if (!(error instanceof BaseError)) {
+        return false;
+    }
+
+    return error.walk((err) => (
+        err instanceof ContractFunctionRevertedError ||
+        err instanceof ExecutionRevertedError ||
+        (err instanceof RawContractError && err.code === 3)
+    )) !== null;
+}
+
 
 export class RelayClient {
     readonly relayerUrl: string;
@@ -63,6 +106,8 @@ export class RelayClient {
     readonly contractConfig: ContractConfig;
 
     readonly httpClient: HttpClient;
+
+    readonly publicClient: PublicClient;
 
     readonly signer?: IAbstractSigner;
 
@@ -83,6 +128,10 @@ export class RelayClient {
         this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
+        this.publicClient = createPublicClient({
+            chain: getViemChain(chainId),
+            transport: http(),
+        });
         
         if (signer != undefined) {
             this.signer = createAbstractSigner(chainId, signer);
@@ -385,10 +434,26 @@ export class RelayClient {
             throw CONFIG_UNSUPPORTED_ON_CHAIN;
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
-        if (config.DepositWalletBeacon) {
-            return deriveBeaconDepositWallet(address, config.DepositWalletFactory, config.DepositWalletBeacon);
+        const beacon = await this.getDepositWalletFactoryBeacon(config.DepositWalletFactory);
+        if (beacon.toLowerCase() !== zeroAddress) {
+            return deriveBeaconDepositWallet(address, config.DepositWalletFactory, beacon);
         }
         return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+    }
+
+    private async getDepositWalletFactoryBeacon(factory: string): Promise<string> {
+        try {
+            const { data } = await this.publicClient.call({
+                to: factory as `0x${string}`,
+                data: FACTORY_BEACON_SELECTOR,
+            });
+            return decodeAddressReturnData(data);
+        } catch (error) {
+            if (isContractRevert(error)) {
+                return zeroAddress;
+            }
+            throw error;
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ import { createWalletClient, http, WalletClient, zeroAddress } from "viem";
 import { polygon } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { encodeProxyTransactionData } from "../../src/encode";
+import { RelayClient } from "../../src/client";
 import {
     buildProxyTransactionRequest,
     buildSafeCreateTransactionRequest,
@@ -43,6 +44,7 @@ describe("setup", () => {
     // Calldata to approve CTF as spender on USDC
     const usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
     const approveCalldata = "0x095ea7b30000000000000000000000004d97dcd97ec945f40cf65f87097ace5ea0476045ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const depositWalletBeacon = "0x7A18EDfe055488A3128f01F563e5B479D92ffc3a";
 
     // ethers signer
     const w = new Wallet(privateKey);
@@ -182,10 +184,42 @@ describe("setup", () => {
             const wallet = deriveBeaconDepositWallet(
                 "0x0000000000000000000000000000000000000001",
                 contractConfig.DepositWalletContracts.DepositWalletFactory,
-                contractConfig.DepositWalletContracts.DepositWalletBeacon,
+                depositWalletBeacon,
             );
 
             expect(wallet.toLowerCase()).equal("0x94bf330955a0b957662feaf878de77bf25f76cd9");
+        });
+
+        it("uses factory beacon detection for the client expected address", async () => {
+            const client = new RelayClient("http://localhost:8080", chainId, ethersWallet);
+            (client as unknown as { publicClient: { call: () => Promise<{ data: string }> } }).publicClient = {
+                call: async () => ({ data: `0x000000000000000000000000${depositWalletBeacon.slice(2)}` }),
+            };
+
+            const wallet = await client.deriveDepositWalletAddress();
+            const expectedWallet = deriveBeaconDepositWallet(
+                address,
+                contractConfig.DepositWalletContracts.DepositWalletFactory,
+                depositWalletBeacon,
+            );
+
+            expect(wallet).equal(expectedWallet);
+        });
+
+        it("falls back to the legacy UUPS address when the factory has no beacon", async () => {
+            const client = new RelayClient("http://localhost:8080", chainId, ethersWallet);
+            (client as unknown as { publicClient: { call: () => Promise<{ data: string }> } }).publicClient = {
+                call: async () => ({ data: `0x000000000000000000000000${zeroAddress.slice(2)}` }),
+            };
+
+            const wallet = await client.deriveDepositWalletAddress();
+            const expectedWallet = deriveDepositWallet(
+                address,
+                contractConfig.DepositWalletContracts.DepositWalletFactory,
+                contractConfig.DepositWalletContracts.DepositWalletImplementation,
+            );
+
+            expect(wallet).equal(expectedWallet);
         });
     });
 });
