@@ -79,6 +79,7 @@ function depositWalletArgs(owner: string, factory: string): Hex {
 /**
  * Computes the deterministic deposit wallet address for a given owner.
  * walletId is derived as bytes32(owner) - the 20-byte address left-padded to 32 bytes.
+ * @deprecated Use RelayClient.deriveDepositWalletAddress(). This helper only derives legacy UUPS deposit wallet addresses.
  */
 export const deriveDepositWallet = (
     owner: string,

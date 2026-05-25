@@ -317,7 +317,7 @@ Deposit Wallets are smart contract wallets that support EIP-712 signed batch exe
 
 #### Derive Deposit Wallet Address
 
-You can predict the deposit wallet address before deployment using CREATE2:
+You can predict the deposit wallet address before deployment:
 
 ```typescript
 const client = new RelayClient(relayerUrl, chainId, wallet, builderConfig);
@@ -326,13 +326,7 @@ const walletAddress = await client.deriveDepositWalletAddress();
 console.log("Expected deposit wallet address:", walletAddress);
 ```
 
-Or use the standalone function directly:
-
-```typescript
-import { deriveBeaconDepositWallet } from "@polymarket/builder-relayer-client";
-
-const walletAddress = deriveBeaconDepositWallet(ownerAddress, factoryAddress, beaconAddress);
-```
+The standalone `deriveDepositWallet()` helper only derives legacy UUPS deposit wallet addresses and is deprecated. Prefer `client.deriveDepositWalletAddress()`.
 
 #### Deploy Deposit Wallet
 

@@ -5,7 +5,7 @@ import { Wallet } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 import { createWalletClient, http, WalletClient, zeroAddress } from "viem";
-import { polygon } from "viem/chains";
+import { polygon, polygonAmoy } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { encodeProxyTransactionData } from "../../src/encode";
 import { RelayClient } from "../../src/client";
@@ -13,9 +13,9 @@ import {
     buildProxyTransactionRequest,
     buildSafeCreateTransactionRequest,
     buildSafeTransactionRequest,
-    deriveBeaconDepositWallet,
     deriveDepositWallet,
 } from "../../src/builder";
+import { deriveBeaconDepositWallet } from "../../src/builder/derive";
 import {
     CallType,
     OperationType,
@@ -238,6 +238,17 @@ describe("setup", () => {
             );
 
             expect(wallet).equal(expectedWallet);
+        });
+
+        it("rejects an options chain that does not match the chain id", () => {
+            expect(() => new RelayClient(
+                "http://localhost:8080",
+                chainId,
+                ethersWallet,
+                undefined,
+                undefined,
+                { chain: polygonAmoy },
+            )).to.throw("chain id does not match chainId");
         });
     });
 });

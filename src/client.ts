@@ -7,11 +7,12 @@ import {
     ExecutionRevertedError,
     http,
     RawContractError,
+    type Chain,
     type PublicClient,
     WalletClient,
     zeroAddress,
 } from "viem";
-import { polygon, polygonAmoy } from "viem/chains";
+import { polygon } from "viem/chains";
 import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import {
     GET,
@@ -53,9 +54,9 @@ import {
     buildDepositWalletBatchRequest,
     buildDepositWalletCreateRequest,
     deriveSafe,
-    deriveBeaconDepositWallet,
     deriveDepositWallet,
 } from "./builder";
+import { deriveBeaconDepositWallet } from "./builder/derive";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
 import { ContractConfig, getContractConfig, isProxyContractConfigValid, isSafeContractConfigValid, isDepositWalletContractConfigValid } from "./config";
@@ -64,17 +65,6 @@ import { CONFIG_UNSUPPORTED_ON_CHAIN, SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_U
 import { encodeProxyTransactionData } from "./encode";
 
 const FACTORY_BEACON_SELECTOR = "0x49493a4d";
-
-function getViemChain(chainId: number) {
-    switch (chainId) {
-        case 137:
-            return polygon;
-        case 80002:
-            return polygonAmoy;
-        default:
-            throw new Error("Invalid network");
-    }
-}
 
 function decodeAddressReturnData(data?: string): string {
     if (data === undefined || data.length < 66) {
@@ -93,6 +83,10 @@ function isContractRevert(error: unknown): boolean {
         err instanceof ExecutionRevertedError ||
         (err instanceof RawContractError && err.code === 3)
     )) !== null;
+}
+
+export interface RelayClientOptions {
+    chain?: Chain;
 }
 
 export class RelayClient {
@@ -118,6 +112,7 @@ export class RelayClient {
         signer?: Wallet | JsonRpcSigner | WalletClient,
         builderConfig?: BuilderConfig,
         relayTxType?: RelayerTxType,
+        options?: RelayClientOptions,
     ) {
         this.relayerUrl = relayerUrl.endsWith("/") ? relayerUrl.slice(0, -1) : relayerUrl;
         this.chainId = chainId;
@@ -127,8 +122,12 @@ export class RelayClient {
         this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
+        const chain = options?.chain ?? polygon;
+        if (chain.id !== chainId) {
+            throw new Error("chain id does not match chainId");
+        }
         this.publicClient = createPublicClient({
-            chain: getViemChain(chainId),
+            chain,
             transport: http(),
         });
         
