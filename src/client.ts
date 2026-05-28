@@ -1,6 +1,18 @@
 import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcSigner } from "@ethersproject/providers";
-import { WalletClient, zeroAddress } from "viem";
+import {
+    BaseError,
+    ContractFunctionRevertedError,
+    createPublicClient,
+    ExecutionRevertedError,
+    http,
+    RawContractError,
+    type Chain,
+    type PublicClient,
+    WalletClient,
+    zeroAddress,
+} from "viem";
+import { polygon } from "viem/chains";
 import { createAbstractSigner, IAbstractSigner } from "@polymarket/builder-abstract-signer";
 import {
     GET,
@@ -42,8 +54,8 @@ import {
     buildDepositWalletBatchRequest,
     buildDepositWalletCreateRequest,
     deriveSafe,
-    deriveDepositWallet,
 } from "./builder";
+import { deriveBeaconDepositWallet, deriveUupsDepositWallet } from "./builder/derive";
 import { sleep } from "./utils";
 import { ClientRelayerTransactionResponse } from "./response";
 import { ContractConfig, getContractConfig, isProxyContractConfigValid, isSafeContractConfigValid, isDepositWalletContractConfigValid } from "./config";
@@ -51,6 +63,30 @@ import { BuilderConfig, BuilderHeaderPayload } from "@polymarket/builder-signing
 import { CONFIG_UNSUPPORTED_ON_CHAIN, SAFE_DEPLOYED, SAFE_NOT_DEPLOYED, SIGNER_UNAVAILABLE } from "./errors";
 import { encodeProxyTransactionData } from "./encode";
 
+const FACTORY_BEACON_SELECTOR = "0x49493a4d";
+
+function decodeAddressReturnData(data?: string): string {
+    if (data === undefined || data.length < 66) {
+        return zeroAddress;
+    }
+    return `0x${data.slice(-40)}`;
+}
+
+function isContractRevert(error: unknown): boolean {
+    if (!(error instanceof BaseError)) {
+        return false;
+    }
+
+    return error.walk((err) => (
+        err instanceof ContractFunctionRevertedError ||
+        err instanceof ExecutionRevertedError ||
+        (err instanceof RawContractError && err.code === 3)
+    )) !== null;
+}
+
+export interface RelayClientOptions {
+    chain?: Chain;
+}
 
 export class RelayClient {
     readonly relayerUrl: string;
@@ -63,6 +99,8 @@ export class RelayClient {
 
     readonly httpClient: HttpClient;
 
+    private readonly publicClient: PublicClient;
+
     readonly signer?: IAbstractSigner;
 
     readonly builderConfig?: BuilderConfig;
@@ -73,6 +111,7 @@ export class RelayClient {
         signer?: Wallet | JsonRpcSigner | WalletClient,
         builderConfig?: BuilderConfig,
         relayTxType?: RelayerTxType,
+        options?: RelayClientOptions,
     ) {
         this.relayerUrl = relayerUrl.endsWith("/") ? relayerUrl.slice(0, -1) : relayerUrl;
         this.chainId = chainId;
@@ -82,6 +121,14 @@ export class RelayClient {
         this.relayTxType = relayTxType;
         this.contractConfig = getContractConfig(chainId);
         this.httpClient = new HttpClient();
+        const chain = options?.chain ?? polygon;
+        if (chain.id !== chainId) {
+            throw new Error("chain id does not match chainId");
+        }
+        this.publicClient = createPublicClient({
+            chain,
+            transport: http(),
+        });
         
         if (signer != undefined) {
             this.signer = createAbstractSigner(chainId, signer);
@@ -384,7 +431,35 @@ export class RelayClient {
             throw CONFIG_UNSUPPORTED_ON_CHAIN;
         }
         const address = await (this.signer as IAbstractSigner).getAddress();
-        return deriveDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+        const uupsAddress = deriveUupsDepositWallet(address, config.DepositWalletFactory, config.DepositWalletImplementation);
+        const beacon = await this.getDepositWalletFactoryBeacon(config.DepositWalletFactory);
+        if (beacon.toLowerCase() === zeroAddress) {
+            return uupsAddress;
+        }
+        if (await this.isContractDeployed(uupsAddress)) {
+            return uupsAddress;
+        }
+        return deriveBeaconDepositWallet(address, config.DepositWalletFactory, beacon);
+    }
+
+    private async isContractDeployed(address: string): Promise<boolean> {
+        const code = await this.publicClient.getCode({ address: address as `0x${string}` });
+        return code !== undefined && code !== "0x";
+    }
+
+    private async getDepositWalletFactoryBeacon(factory: string): Promise<string> {
+        try {
+            const { data } = await this.publicClient.call({
+                to: factory as `0x${string}`,
+                data: FACTORY_BEACON_SELECTOR,
+            });
+            return decodeAddressReturnData(data);
+        } catch (error) {
+            if (isContractRevert(error)) {
+                return zeroAddress;
+            }
+            throw error;
+        }
     }
 
     /**

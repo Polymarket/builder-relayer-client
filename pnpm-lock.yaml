@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@ethersproject/providers':
+        specifier: 5.8.0
+        version: 5.8.0
+      '@ethersproject/wallet':
+        specifier: 5.8.0
+        version: 5.8.0
       '@polymarket/builder-abstract-signer':
         specifier: 0.0.1
         version: 0.0.1
