@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestHeaders, AxiosResponse } from "axios";
+// axios@^1.x: AxiosRequestHeaders type narrowed significantly; use Record<string, string> instead.
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 export const GET = "GET";
 export const POST = "POST";
@@ -9,7 +10,7 @@ export const PUT = "PUT";
 export type QueryParams = Record<string, any>;
 
 export interface RequestOptions {
-    headers?: AxiosRequestHeaders;
+    headers?: Record<string, string>;
     data?: any;
     params?: QueryParams;
 }
@@ -29,7 +30,7 @@ export class HttpClient {
     ): Promise<AxiosResponse> {
         if (options !== undefined) {
             if (options.headers != undefined) {
-                options.headers["Access-Control-Allow-Credentials"] = true;
+                options.headers["Access-Control-Allow-Credentials"] = "true";
             }
         }
 
