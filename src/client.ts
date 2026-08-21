@@ -140,7 +140,7 @@ export class RelayClient {
     }
 
     public async getNonce(signerAddress: string, signerType: string): Promise<NoncePayload> {
-        return this.send(
+        return this.send<NoncePayload>(
             `${GET_NONCE}`,
             GET,
             {params: { address: signerAddress, type: signerType }},
@@ -148,7 +148,7 @@ export class RelayClient {
     }
 
     public async getRelayPayload(signerAddress: string, signerType: string): Promise<RelayPayload> {
-        return this.send(
+        return this.send<RelayPayload>(
             `${GET_RELAY_PAYLOAD}`,
             GET,
             {params: { address: signerAddress, type: signerType }}
@@ -156,7 +156,7 @@ export class RelayClient {
     }
 
     public async getTransaction(transactionId: string): Promise<RelayerTransaction[]> {
-        return this.send(
+        return this.send<RelayerTransaction[]>(
             `${GET_TRANSACTION}`,
             GET,
             {params: { id: transactionId }},
@@ -164,7 +164,7 @@ export class RelayClient {
     }
 
     public async getTransactions(): Promise<RelayerTransaction[]> {
-        return this.sendAuthedRequest(GET, GET_TRANSACTIONS);
+        return this.sendAuthedRequest<RelayerTransaction[]>(GET, GET_TRANSACTIONS);
     }
 
     /**
@@ -229,7 +229,7 @@ export class RelayClient {
         
         const requestPayload = JSON.stringify(request);
         
-        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload)
+        const resp = await this.sendAuthedRequest<RelayerTransactionResponse>(POST, SUBMIT_TRANSACTION, requestPayload)
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
             resp.state,
@@ -276,7 +276,7 @@ export class RelayClient {
         
         const requestPayload = JSON.stringify(request);
         
-        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload);
+        const resp = await this.sendAuthedRequest<RelayerTransactionResponse>(POST, SUBMIT_TRANSACTION, requestPayload);
         
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
@@ -324,7 +324,7 @@ export class RelayClient {
         
         const requestPayload = JSON.stringify(request);
 
-        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload)
+        const resp = await this.sendAuthedRequest<RelayerTransactionResponse>(POST, SUBMIT_TRANSACTION, requestPayload)
         
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
@@ -339,7 +339,7 @@ export class RelayClient {
         if (type !== undefined) {
             params.type = type;
         }
-        const resp: GetDeployedResponse = await this.send(
+        const resp = await this.send<GetDeployedResponse>(
             `${GET_DEPLOYED}`,
             GET,
             {params},
@@ -363,7 +363,7 @@ export class RelayClient {
         const request = buildDepositWalletCreateRequest(from, depositWalletConfig);
         const requestPayload = JSON.stringify(request);
 
-        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload);
+        const resp = await this.sendAuthedRequest<RelayerTransactionResponse>(POST, SUBMIT_TRANSACTION, requestPayload);
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
             resp.state,
@@ -411,7 +411,7 @@ export class RelayClient {
 
         const requestPayload = JSON.stringify(request);
 
-        const resp: RelayerTransactionResponse = await this.sendAuthedRequest(POST, SUBMIT_TRANSACTION, requestPayload);
+        const resp = await this.sendAuthedRequest<RelayerTransactionResponse>(POST, SUBMIT_TRANSACTION, requestPayload);
         return new ClientRelayerTransactionResponse(
             resp.transactionID,
             resp.state,
@@ -502,24 +502,24 @@ export class RelayClient {
         console.log(`Transaction not found or not in given states, timing out!`);
     }
 
-    private async sendAuthedRequest(
+    private async sendAuthedRequest<TResponse>(
         method: string,
         path: string,
         body?: string
-    ): Promise<any> {        
+    ): Promise<TResponse> {
         // builders auth
         if (this.canBuilderAuth()) {
             const builderHeaders = await this._generateBuilderHeaders(method, path, body);
             if (builderHeaders !== undefined) {
-                return this.send(
+                return this.send<TResponse>(
                     path,
-                    method, 
+                    method,
                     { headers: builderHeaders, data: body }
-                );    
+                );
             }
         }
 
-        return this.send(
+        return this.send<TResponse>(
             path,
             method,
             {data: body}
@@ -550,12 +550,12 @@ export class RelayClient {
         return (this.builderConfig != undefined && this.builderConfig.isValid());
     }
 
-    private async send(
+    private async send<TResponse>(
         endpoint: string,
         method: string,
         options?: RequestOptions
-    ): Promise<any> {
-        const resp = await this.httpClient.send(`${this.relayerUrl}${endpoint}`, method, options);
+    ): Promise<TResponse> {
+        const resp = await this.httpClient.send<TResponse>(`${this.relayerUrl}${endpoint}`, method, options);
         return resp.data;
     }
 

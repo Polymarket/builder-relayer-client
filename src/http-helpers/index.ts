@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestHeaders, AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 export const GET = "GET";
 export const POST = "POST";
@@ -6,11 +6,11 @@ export const DELETE = "DELETE";
 export const PUT = "PUT";
 
 
-export type QueryParams = Record<string, any>;
+export type QueryParams = Record<string, unknown>;
 
 export interface RequestOptions {
-    headers?: AxiosRequestHeaders;
-    data?: any;
+    headers?: Record<string, string>;
+    data?: unknown;
     params?: QueryParams;
 }
 
@@ -22,19 +22,13 @@ export class HttpClient {
         this.instance = axios.create({withCredentials: true});
     }
 
-    public async send(
+    public async send<TResponse>(
         endpoint: string,
         method: string,
         options?: RequestOptions,
-    ): Promise<AxiosResponse> {
-        if (options !== undefined) {
-            if (options.headers != undefined) {
-                options.headers["Access-Control-Allow-Credentials"] = true;
-            }
-        }
-
+    ): Promise<AxiosResponse<TResponse>> {
         try {
-            const resp = await this.instance.request(
+            const resp = await this.instance.request<TResponse>(
                 {
                     url: endpoint,
                     method: method,
@@ -44,7 +38,7 @@ export class HttpClient {
                 }
             );
             return resp;
-        } catch (err) {
+        } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
                 if (err.response) {
                     const errPayload = {
@@ -61,7 +55,8 @@ export class HttpClient {
                     throw new Error(JSON.stringify(errPayload));
                 }
             }
-            throw new Error(JSON.stringify({ error: err }));
+            const message = err instanceof Error ? err.message : String(err);
+            throw new Error(JSON.stringify({ error: message }));
         }
     }
 }
