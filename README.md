@@ -328,6 +328,8 @@ console.log("Expected deposit wallet address:", walletAddress);
 
 The standalone `deriveDepositWallet()` helper only derives UUPS deposit wallet addresses and is deprecated. Prefer `client.deriveDepositWalletAddress()`.
 
+For existing integrations, see the [deposit-wallet migration runbook](docs/deposit-wallet-migration.md) before upgrading or reusing a stored funding address. Address derivation does not deploy a wallet or recover earlier deposits.
+
 #### Deploy Deposit Wallet
 
 ```typescript
